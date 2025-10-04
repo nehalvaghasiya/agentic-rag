@@ -9,7 +9,7 @@ Repository = "https://github.com//rag"
 name = "rag"
 description = "Agentic-rag"
 authors = [
-    { name="Nandi", email="" },
+    { name="Nehal Vaghsiya", email="nehal.vaghasiya777@gmail.com" },
 ]
 readme = "README.md"
 license = "MIT"
