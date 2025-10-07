@@ -10,13 +10,13 @@ from pathlib import Path
 
 from loguru import logger
 
-from rag.backend.loaders.base import DocumentLoader
-from rag.backend.loaders.docx_loader import DOCXLoader
-from rag.backend.loaders.image_loader import ImageLoader
-from rag.backend.loaders.pdf_loader import PDFLoader
-from rag.backend.loaders.text_loader import TextLoader
-from rag.backend.loaders.website_loader import WebsiteLoader
-from rag.config import Config
+from backend.loaders.base import DocumentLoader
+from backend.loaders.docx_loader import DOCXLoader
+from backend.loaders.image_loader import ImageLoader
+from backend.loaders.pdf_loader import PDFLoader
+from backend.loaders.text_loader import TextLoader
+from backend.loaders.website_loader import WebsiteLoader
+from config import Config
 
 
 class LoaderFactory:
