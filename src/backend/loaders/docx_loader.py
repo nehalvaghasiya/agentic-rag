@@ -10,8 +10,8 @@ from langchain_community.document_loaders import Docx2txtLoader
 from langchain_core.documents import Document
 from loguru import logger
 
-from rag.backend.loaders.base import AsyncDocumentLoader
-from rag.config import DOCXLoaderConfig
+from backend.loaders.base import AsyncDocumentLoader
+from config import DOCXLoaderConfig
 
 
 class DOCXLoader(AsyncDocumentLoader):
