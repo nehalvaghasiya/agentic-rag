@@ -11,13 +11,16 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -e .
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install Python dependencies using uv
+COPY pyproject.toml README.md ./
+COPY .git ./.git
+COPY src/ ./src/
+RUN uv pip install --system -e .
 
 # Copy application code
-COPY src/ ./src/
 COPY config.yaml ./
 
 # Expose port
