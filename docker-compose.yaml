@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL with PGVector extension
   postgres:
@@ -14,7 +12,7 @@ services:
     volumes:
       - pgvector_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raguser}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raguser} -d ${POSTGRES_DB:-ragdb}"]
       interval: 10s
       timeout: 5s
       retries: 5
