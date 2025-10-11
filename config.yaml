@@ -131,7 +131,7 @@ vectorstore:
   provider: "pgvector"  # Currently only pgvector supported
   
   pgvector:
-    host: "localhost"
+    host: "postgres"  # Use Docker service name instead of localhost
     port: 5432
     database: "ragdb"
     user: "raguser"
