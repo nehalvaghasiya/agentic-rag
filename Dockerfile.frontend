@@ -12,11 +12,11 @@ RUN apt-get update && apt-get install -y \
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Install Python dependencies using uv
-COPY pyproject.toml README.md ./
+# Install Python dependencies using uv sync
+COPY pyproject.toml uv.lock README.md ./
 COPY .git ./.git
 COPY src/ ./src/
-RUN uv pip install --system -e .
+RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY config.yaml ./
@@ -25,4 +25,4 @@ COPY config.yaml ./
 EXPOSE 7860
 
 # Run frontend
-CMD ["python", "-m", "rag.frontend.gradio_app"]
+CMD ["uv", "run", "python", "-m", "rag.frontend.gradio_app"]
