@@ -49,7 +49,13 @@ class RAGChatInterface:
             config: Application configuration.
         """
         self.config = config
-        self.api_base_url = f"http://{config.api.host}:{config.api.port}"
+        
+        # Use environment variables for Docker deployment, fallback to config
+        import os
+        backend_host = os.getenv("BACKEND_HOST", config.api.host)
+        backend_port = os.getenv("BACKEND_PORT", str(config.api.port))
+        
+        self.api_base_url = f"http://{backend_host}:{backend_port}"
         self.client = httpx.AsyncClient(timeout=300.0)  # 5 min timeout for long LLM calls
 
         logger.info(f"Initialized RAG chat interface: {self.api_base_url}")
@@ -208,79 +214,112 @@ class RAGChatInterface:
             css=custom_css,
             fill_height=True,
         ) as interface:
+            # Title and description
             gr.Markdown(
                 f"""
-                # {self.config.frontend.title}
-                {self.config.frontend.description}
-                
-                💡 Upload documents and ask questions about them!
+                <h1 style='text-align: center;'>🤖 {self.config.frontend.title}</h1>
+                <h3 style='text-align: center;'>{self.config.frontend.description}</h3>
                 """
             )
+            
+            # Main chat area
+            chatbot = gr.Chatbot(
+                type="messages",
+                label="💬 Chat",
+                height=650,
+                placeholder="""
 
+    
+    ═══════════════════════════════════════════════
+    
+    Step 1:  Click the attachment button below
+    
+    Step 2:  Upload your document
+    
+    Step 3:  Ask questions about the content
+    
+    Step 4:  Get AI-powered answers with sources!
+    
+    ═══════════════════════════════════════════════
+    
+
+""",
+                show_copy_button=False,
+                show_share_button=False,
+                elem_id="chatbot",
+            )
+
+            chat_input = gr.MultimodalTextbox(
+                interactive=True,
+                file_count="multiple",
+                placeholder="Enter message or upload file...",
+                show_label=False,
+                stop_btn=True,
+                autofocus=True,
+                sources=["upload"],
+            )
+
+            gr.Examples(
+                examples=[
+                    "What is this document about?",
+                    "Summarize the main points",
+                    "List key findings",
+                ],
+                inputs=chat_input,
+            )
+
+            # Settings and information section below chat (collapsible)
             with gr.Row():
-                # Sidebar for settings and information
                 with gr.Column(scale=1):
-                    gr.Markdown("### ⚙️ Settings")
+                    with gr.Accordion("⚙️ Settings", open=False):
+                        gr.Markdown(
+                            """
+                            Adjust these settings to customize your RAG experience.
+                            Changes apply to the next query.
+                            """
+                        )
+                        _top_k = gr.Slider(  # noqa: F841
+                            minimum=1,
+                            maximum=10,
+                            value=5,
+                            step=1,
+                            label="Retrieved Documents",
+                            info="Number of context chunks to retrieve",
+                        )
 
-                    _top_k = gr.Slider(  # noqa: F841
-                        minimum=1,
-                        maximum=10,
-                        value=5,
-                        step=1,
-                        label="Retrieved Documents",
-                        info="Number of context chunks",
-                    )
+                with gr.Column(scale=1):
+                    with gr.Accordion("ℹ️ Information", open=False):
+                        gr.Markdown(
+                            f"""
+                            **System Configuration:**
+                            
+                            - **Max file size:** {self.config.app.max_upload_size_mb}MB
+                            - **Supported formats:** PDF, DOCX, TXT, Images
+                            - **LLM Provider:** {self.config.llm.provider}
+                            - **Embeddings:** {self.config.embeddings.provider}
+                            
+                            *To change these settings, modify the `config.yaml` file and restart the application.*
+                            """
+                        )
 
-                    gr.Markdown("---")
-                    gr.Markdown("### ℹ️ Information")
-                    gr.Markdown(
-                        f"""
-                        - **Max file size:** {self.config.app.max_upload_size_mb}MB
-                        - **Supported formats:** PDF, DOCX, TXT, Images
-                        - **LLM Provider:** {self.config.llm.provider}
-                        - **Embeddings:** {self.config.embeddings.provider}
-                        """
-                    )
-
-                    gr.Markdown("---")
-                    gr.Markdown("### 💡 Tip")
-                    gr.Markdown(
-                        """
-                        Upload files directly in the chat using the 📎 button 
-                        in the message input box!
-                        """
-                    )
-
-                # Main chat area
-                with gr.Column(scale=3):
-                    chatbot = gr.Chatbot(
-                        type="messages",
-                        label="💬 Chat",
-                        height=500,
-                        placeholder="<strong>Welcome!</strong><br>Upload a document and start chatting!",
-                        show_copy_button=True,
-                        elem_id="chatbot",
-                    )
-
-                    chat_input = gr.MultimodalTextbox(
-                        interactive=True,
-                        file_count="multiple",
-                        placeholder="Enter message or upload file...",
-                        show_label=False,
-                        sources=["upload"],
-                    )
-
-                    gr.Examples(
-                        examples=[
-                            "What is this document about?",
-                            "Summarize the main points",
-                            "List key findings",
-                        ],
-                        inputs=chat_input,
-                    )
-
-                    with gr.Row():
-                        clear = gr.Button("🗑️ Clear")
+                with gr.Column(scale=1):
+                    with gr.Accordion("💡 Tips & Help", open=False):
+                        gr.Markdown(
+                            """
+                            **Quick Tips:**
+                            
+                            - 📎 Upload files directly using the attachment button in the chat input
+                            - 🛑 Use the stop button to interrupt long responses
+                            - 🗑️ Clear chat history using the clear button in the chatbot header
+                            - 📋 Copy responses using the copy button on each message
+                            - 👍👎 Like/dislike messages to provide feedback
+                            
+                            **Configuration:**
+                            
+                            To customize settings like chunk size, embedding model, or LLM parameters, 
+                            edit the `config.yaml` file in the project root and restart the application.
+                            """
+                        )
 
             # Event handlers
             async def add_message(history, message):
@@ -367,8 +406,8 @@ class RAGChatInterface:
             bot_msg = chat_msg.then(bot_response, chatbot, chatbot, api_name="bot_response")
             bot_msg.then(lambda: gr.MultimodalTextbox(interactive=True), None, [chat_input])
 
-            # Clear button
-            clear.click(lambda: [], outputs=[chatbot])
+            # Wire up the built-in stop button to cancel ongoing generation
+            chat_input.stop(fn=None, inputs=None, outputs=None, cancels=[chat_msg, bot_msg])
 
             # Like/dislike
             def handle_like(data: gr.LikeData):
