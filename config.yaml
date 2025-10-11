@@ -1,0 +1,302 @@
+# Agentic RAG Configuration
+# All runtime parameters, switches, and settings for the entire pipeline
+
+# Application settings
+app:
+  name: "Agentic RAG"
+  version: "1.0.0"
+  debug: false
+  max_upload_size_mb: 5  # Maximum file upload size in MB
+  
+# Fallback mode configuration
+fallback:
+  enabled: true  # Enable fallback to dummy responses when models unavailable
+  embedding_dimensions: 1536  # Dummy embedding dimension (OpenAI default)
+  notify_user: true  # Show notification in UI when using fallback
+
+# Logging configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: "logs/app.log"
+  rotation: "10 MB"
+  retention: "7 days"
+  format: "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+
+# Document loader configuration
+loaders:
+  # PDF loader settings
+  pdf:
+    enabled: true
+    extract_images: true
+  
+  # DOCX loader settings
+  docx:
+    enabled: true
+  
+  # Text loader settings
+  text:
+    enabled: true
+    supported_extensions: [".txt", ".md", ".markdown", ".log", ".csv", ".json"]
+  
+  # Website loader settings
+  website:
+    enabled: true
+    timeout_seconds: 30
+    user_agent: "Mozilla/5.0 (compatible; AgenticRAG/1.0)"
+    max_pages: 10
+  
+  # Image loader settings
+  image:
+    enabled: true
+    ocr_enabled: true
+    supported_formats: ["jpg", "jpeg", "png", "gif", "bmp", "tiff"]
+
+# Preprocessing configuration
+preprocessing:
+  enabled: true
+  
+  # Text cleaning options
+  cleaning:
+    remove_extra_whitespace: true
+    remove_special_chars: false
+    lowercase: false
+  
+  # Summarization (optional preprocessing step)
+  summarization:
+    enabled: false
+    model_provider: "openai"  # openai, cohere, huggingface, custom
+    max_chunk_length: 2000
+
+# Text splitting configuration
+splitting:
+  strategy: "recursive"  # recursive, character, token, semantic
+  
+  # Recursive character splitter (default)
+  recursive:
+    chunk_size: 1000
+    chunk_overlap: 200
+    separators: ["\n\n", "\n", ".", "!", "?", ",", " ", ""]
+  
+  # Character splitter
+  character:
+    chunk_size: 1000
+    chunk_overlap: 200
+    separator: "\n"
+  
+  # Token-based splitter
+  token:
+    chunk_size: 512
+    chunk_overlap: 50
+    encoding_name: "cl100k_base"  # OpenAI tiktoken encoding
+  
+  # Semantic splitter
+  semantic:
+    buffer_size: 1
+    breakpoint_threshold_type: "percentile"  # percentile, standard_deviation, interquartile
+
+# Embedding configuration
+embeddings:
+  provider: "huggingface"  # openai, huggingface, cohere, custom
+  
+  # OpenAI embeddings
+  openai:
+    model: "text-embedding-3-small"
+    dimensions: 1536
+    api_key_env: "OPENAI_API_KEY"
+    base_url: null  # Use for OpenAI-compatible endpoints
+    timeout: 60
+    max_retries: 3
+  
+  # HuggingFace local embeddings
+  huggingface:
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    device: "cpu"  # cpu, cuda, mps
+    normalize_embeddings: true
+  
+  # Cohere embeddings
+  cohere:
+    model: "embed-english-v3.0"
+    input_type: "search_document"
+    api_key_env: "COHERE_API_KEY"
+  
+  # Custom OpenAI-compatible endpoint
+  custom:
+    base_url: "http://localhost:8000/v1"
+    model: "custom-embeddings"
+    api_key_env: "CUSTOM_API_KEY"
+    dimensions: 768
+
+# Vector store configuration
+vectorstore:
+  provider: "pgvector"  # Currently only pgvector supported
+  
+  pgvector:
+    host: "localhost"
+    port: 5432
+    database: "ragdb"
+    user: "raguser"
+    password_env: "POSTGRES_PASSWORD"
+    collection_name: "documents"
+    use_async: true
+    pool_size: 10
+    max_overflow: 20
+
+# Retrieval configuration
+retrieval:
+  # Retriever type
+  strategy: "similarity"  # similarity, mmr, similarity_score_threshold
+  
+  # Number of documents to retrieve
+  top_k: 5
+  
+  # MMR settings (if strategy is mmr)
+  mmr:
+    fetch_k: 20
+    lambda_mult: 0.5
+  
+  # Score threshold (if strategy is similarity_score_threshold)
+  score_threshold: 0.7
+  
+  # Reranking (optional)
+  reranking:
+    enabled: false
+    provider: "cohere"  # cohere, custom
+    model: "rerank-english-v3.0"
+    top_n: 3
+
+# LLM configuration
+llm:
+  provider: "openai"  # openai, cohere, huggingface, custom
+  
+  # OpenAI LLM
+  openai:
+    model: "moonshotai/kimi-k2-instruct-0905"
+    temperature: 0.7
+    max_tokens: 2000
+    api_key_env: "OPENAI_API_KEY"
+    base_url: "https://api.groq.com/openai/v1"  # Use for OpenAI-compatible endpoints
+    timeout: 120
+    streaming: true
+  
+  # Cohere LLM
+  cohere:
+    model: "command-r-plus"
+    temperature: 0.7
+    max_tokens: 2000
+    api_key_env: "COHERE_API_KEY"
+  
+  # HuggingFace LLM
+  huggingface:
+    model: "meta-llama/Llama-2-7b-chat-hf"
+    temperature: 0.7
+    max_tokens: 2000
+    api_key_env: "HUGGINGFACE_API_KEY"
+  
+  # Custom OpenAI-compatible endpoint
+  custom:
+    base_url: "http://localhost:8000/v1"
+    model: "custom-llm"
+    temperature: 0.7
+    max_tokens: 2000
+    api_key_env: "CUSTOM_API_KEY"
+
+# Agent configuration
+agents:
+  enabled: true
+  max_iterations: 10
+  
+  # Available tools for the agent
+  tools:
+    # RAG retriever tool
+    retriever:
+      enabled: true
+      description: "Search the knowledge base for relevant information"
+    
+    # Web search tool
+    web_search:
+      enabled: true
+      provider: "duckduckgo"  # duckduckgo, serp, custom
+      max_results: 5
+      serp_api_key_env: "SERP_API_KEY"
+    
+    # Calculator tool
+    calculator:
+      enabled: true
+      description: "Perform mathematical calculations"
+    
+    # Query optimizer tool
+    query_optimizer:
+      enabled: true
+      description: "Optimize and rephrase user queries for better retrieval"
+    
+    # Relevancy checker tool
+    relevancy_checker:
+      enabled: true
+      threshold: 0.6
+      description: "Check if retrieved documents are relevant to the query"
+
+# RAG pipeline configuration
+rag:
+  # Answer generation
+  generation:
+    use_chat_history: true
+    max_history_messages: 10
+    include_sources: true
+    
+  # Prompts
+  prompts:
+    system: "You are a helpful AI assistant with access to a knowledge base. Answer questions based on the provided context. If you don't know the answer, say so clearly."
+    
+    qa_template: |
+      Context information is below:
+      ---------------------
+      {context}
+      ---------------------
+      
+      Chat History:
+      {chat_history}
+      
+      Given the context information and chat history, answer the following question.
+      If the answer is not in the context, say "I don't have enough information to answer that question."
+      
+      Question: {question}
+      Answer:
+    
+    condense_question_template: |
+      Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
+      
+      Chat History:
+      {chat_history}
+      
+      Follow Up Question: {question}
+      Standalone Question:
+
+# API configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: false
+  workers: 4
+  cors_origins: ["*"]
+  cors_methods: ["*"]
+  cors_headers: ["*"]
+
+# Frontend configuration
+frontend:
+  host: "0.0.0.0"
+  port: 7860
+  share: false
+  
+  # UI settings
+  theme: "default"
+  title: "Agentic RAG Chat"
+  description: "Chat with your documents using AI"
+  
+  # Chat settings
+  chat:
+    placeholder: "Ask me anything about your documents..."
+    examples: [
+      "What is this document about?",
+      "Summarize the main points",
+      "What are the key findings?"
+    ]
