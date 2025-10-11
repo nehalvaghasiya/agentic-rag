@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with PGVector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: agentic-rag-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-raguser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-ragdb}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raguser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: agentic-rag-backend
+    environment:
+      # API keys
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
+      CUSTOM_API_KEY: ${CUSTOM_API_KEY:-}
+      
+      # Database
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragpassword}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./logs:/app/logs
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+  # Frontend UI
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: agentic-rag-frontend
+    environment:
+      # No API keys needed in frontend - it calls backend
+      BACKEND_HOST: backend
+      BACKEND_PORT: 8000
+    ports:
+      - "${FRONTEND_PORT:-7860}:7860"
+    depends_on:
+      - backend
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./logs:/app/logs
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+networks:
+  rag-network:
+    driver: bridge
+
+volumes:
+  pgvector_data:
+    driver: local
