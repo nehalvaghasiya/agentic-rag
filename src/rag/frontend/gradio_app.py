@@ -192,13 +192,6 @@ class RAGChatInterface:
         """
         Create the Gradio interface.
 
-        Uses modern Gradio features:
-        - Blocks for custom layout
-        - ChatInterface-style interaction
-        - File upload with multimodal support
-        - Streaming responses
-        - Like/dislike feedback
-
         Returns:
             Gradio Blocks interface.
         """
