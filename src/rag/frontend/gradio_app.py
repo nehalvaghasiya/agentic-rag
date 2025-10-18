@@ -259,6 +259,7 @@ class RAGChatInterface:
                 sources=["upload"],
             )
 
+            # Gradio Examples of queries
             gr.Examples(
                 examples=[
                     "What is this document about?",
