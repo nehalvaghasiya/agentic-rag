@@ -102,19 +102,6 @@ def create_llm(config: LLMConfig, fallback_config=None):
             logger.info(f"Created HuggingFace LLM: model={config.huggingface.model}")
             return llm
 
-        elif provider == "custom":
-            # Custom OpenAI-compatible endpoint
-            api_key = get_api_key(config.custom.api_key_env)
-            llm = ChatOpenAI(
-                model=config.custom.model,
-                temperature=config.custom.temperature,
-                max_tokens=config.custom.max_tokens,
-                api_key=api_key,
-                base_url=config.custom.base_url,
-            )
-            logger.info(f"Created custom LLM: base_url={config.custom.base_url}")
-            return llm
-
         else:
             raise ValueError(
                 f"Unknown LLM provider: {provider}. Supported: openai, cohere, huggingface, custom"
