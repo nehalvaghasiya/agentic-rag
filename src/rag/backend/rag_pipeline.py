@@ -1,5 +1,5 @@
 """
-RAG retrieval and generation pipeline.
+rag_pipeline.py: RAG retrieval and generation pipeline.
 
 Orchestrates the complete RAG workflow: retrieval, reranking, and generation.
 Includes fallback mode tracking for graceful degradation.
