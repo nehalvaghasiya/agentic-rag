@@ -1,0 +1,5 @@
+{
+    "powerquery.client.additionalSymbolsDirectories": [
+        "/home/nehal/Personal/agentic-rag/.vscode/excel-pq-symbols"
+    ]
+}
