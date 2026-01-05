@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+
+  /* Light theme (professional slate + blue accent) */
+  --color-bg: 248 250 252;
+  --color-surface: 255 255 255;
+  --color-border: 226 232 240;
+  --color-text: 15 23 42;
+  --color-muted: 100 116 139;
+  --color-accent: 37 99 235;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Dark theme */
+  --color-bg: 11 18 32;
+  --color-surface: 15 23 42;
+  --color-border: 30 41 59;
+  --color-text: 226 232 240;
+  --color-muted: 148 163 184;
+  --color-accent: 96 165 250;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--color-bg));
+  color: rgb(var(--color-text));
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+}
