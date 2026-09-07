@@ -107,10 +107,6 @@ Common variables:
 - `OPENAI_MODEL` (optional)
 - `OPENAI_BASE_URL` (optional)
 
-Other (legacy or unused in the current backend codepath):
-
-- `SERPAPI_API_KEY`, `GOOGLE_CSE_ID`
-
 Notes:
 
 - The backend supports a **deterministic mode** (`Settings.mode = "deterministic"`) which disables LLM calls and uses hash embeddings. This is useful for tests and offline development.
