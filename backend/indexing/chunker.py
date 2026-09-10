@@ -49,6 +49,9 @@ def chunk_documents(
                 chunks.append(Document(page_content=chunk_text, metadata=meta))
                 chunk_idx += 1
 
+            if end == len(text):
+                break
+
             start += step
 
     return chunks
