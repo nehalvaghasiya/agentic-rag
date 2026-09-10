@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 from fastapi import UploadFile
 
@@ -74,7 +75,7 @@ class KBStore:
         from backend.llm import get_embedder
 
         # Generate unique ID
-        kb_id = f"kb_{int(datetime.now().timestamp())}"
+        kb_id = f"kb_{uuid4().hex}"
         kb_dir = self._root / kb_id
         kb_dir.mkdir(parents=True, exist_ok=True)
 
