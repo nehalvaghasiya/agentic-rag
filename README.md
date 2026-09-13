@@ -37,17 +37,39 @@ Prereqs:
 
 - Python 3.11+
 
-Install dependencies (recommended: `uv`):
+Install the locked runtime dependencies with `uv`. The UI defaults to local
+Sentence Transformers embeddings, which require the `local-embeddings` extra:
 
 ```bash
-uv sync
+uv sync --locked --no-default-groups --no-install-project --extra local-embeddings
 ```
 
-Run the API server:
+For hosted embeddings or deterministic development, install the core runtime:
 
 ```bash
-uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload
+uv sync --locked --no-default-groups --no-install-project
 ```
+
+For hosted embeddings, set `OPENAI_API_KEY` and select a `text-embedding-*` model
+when creating a knowledge base. For offline deterministic development, set
+`MODE=deterministic` before starting the server. Core installs exclude PyTorch,
+Transformers, and Sentence Transformers. Local models download weights on first
+use; those model files are separate from the Python dependency lockfile.
+
+`--no-install-project` is a temporary source-checkout workaround for I002: the
+wheel configuration still targets the absent `src/rag` package. Run these
+commands from the repository root. To install development tools as well, omit
+`--no-default-groups`; retain `--extra local-embeddings` when using local models.
+
+Run the API server through uv so it uses the synced environment:
+
+```bash
+uv run --no-sync python -m uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload
+```
+
+For server deployment, omit `--reload`. Repeating the core-only sync removes the
+optional local embedding packages, so include the extra whenever syncing that
+profile. No global `uvicorn` installation or activated shell is required.
 
 Open API docs:
 
@@ -148,6 +170,7 @@ Base URL: `http://127.0.0.1:8001`
 
 - Data storage is local under `.data/` by default.
 - CORS is enabled for common local dev origins.
+- Runtime dependency validation: [isolated smoke tests](tests/smoke/README.md).
 
 ## Troubleshooting
 
