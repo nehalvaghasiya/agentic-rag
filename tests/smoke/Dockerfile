@@ -16,12 +16,12 @@ COPY tests/smoke/check_runtime.py ./tests/smoke/check_runtime.py
 FROM source AS local-embeddings
 RUN --mount=type=cache,id=rag-smoke-uv,target=/root/.cache/uv \
     uv sync --locked --no-default-groups --no-install-project --extra local-embeddings \
-    && .venv/bin/python tests/smoke/check_runtime.py --check-lock --profile local-embeddings
-CMD ["/app/.venv/bin/python", "-I", "/app/tests/smoke/check_runtime.py", "--profile", "local-embeddings"]
+    && uv run --no-sync python tests/smoke/check_runtime.py --check-lock --profile local-embeddings
+CMD ["uv", "run", "--no-sync", "python", "-I", "/app/tests/smoke/check_runtime.py", "--profile", "local-embeddings"]
 
 # Keep the smaller core profile as the default build target.
 FROM source AS core
 RUN --mount=type=cache,id=rag-smoke-uv,target=/root/.cache/uv \
     uv sync --locked --no-default-groups --no-install-project \
-    && .venv/bin/python tests/smoke/check_runtime.py --check-lock
-CMD ["/app/.venv/bin/python", "-I", "/app/tests/smoke/check_runtime.py", "--profile", "core"]
+    && uv run --no-sync python tests/smoke/check_runtime.py --check-lock
+CMD ["uv", "run", "--no-sync", "python", "-I", "/app/tests/smoke/check_runtime.py", "--profile", "core"]
