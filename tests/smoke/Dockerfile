@@ -1,4 +1,4 @@
-# Override with another digest-pinned Python image to test a different interpreter.
+# Pinned default for a repeatable base; PYTHON_IMAGE also accepts plain Python tags.
 ARG PYTHON_IMAGE=python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
 FROM ghcr.io/astral-sh/uv:0.12.1@sha256:cf4eedcaa81655197f625739489effcbe71b61ceb1506f332c3facae5deceded AS uv
 FROM ${PYTHON_IMAGE} AS source
