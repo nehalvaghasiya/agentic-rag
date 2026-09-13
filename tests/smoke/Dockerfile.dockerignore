@@ -1,0 +1,12 @@
+# Send only the source and metadata needed by the smoke image.
+**
+!pyproject.toml
+!uv.lock
+!README.md
+!backend/
+!backend/**/*.py
+!tests/
+!tests/smoke/
+!tests/smoke/check_runtime.py
+!tests/smoke/Dockerfile
+!tests/smoke/Dockerfile.dockerignore
