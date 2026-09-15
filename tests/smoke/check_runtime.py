@@ -93,7 +93,7 @@ def pdf_fixture() -> bytes:
 
 def check_imports(profile: str) -> None:
     check_environment(profile)
-    # Source-checkout imports are intentional until I002 repairs the wheel layout.
+    # This harness checks source dependencies; check_wheel.py checks installed artifacts.
     sys.path.insert(0, str(ROOT))
     for path in sorted((ROOT / "backend").rglob("*.py")):
         parts = path.relative_to(ROOT).with_suffix("").parts
