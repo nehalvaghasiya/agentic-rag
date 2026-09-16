@@ -13,6 +13,32 @@ COPY pyproject.toml uv.lock README.md ./
 COPY backend/ ./backend/
 COPY tests/smoke/check_runtime.py ./tests/smoke/check_runtime.py
 
+FROM source AS wheel-build
+COPY tests/smoke/check_wheel.py ./tests/smoke/check_wheel.py
+RUN --mount=type=cache,id=rag-smoke-uv,target=/root/.cache/uv \
+    uv build --wheel --no-sources --out-dir /dist \
+    && python tests/smoke/check_wheel.py --inspect /dist --source-root /app \
+    && uv export --locked --no-default-groups --no-emit-project --no-hashes \
+        --output-file /dist/constraints.txt \
+    && uv venv /opt/venv \
+    && uv pip install --python /opt/venv/bin/python \
+        --constraint /dist/constraints.txt /dist/*.whl \
+    && uv pip check --python /opt/venv/bin/python \
+    && uv sync --locked --no-default-groups \
+    && uv run --no-sync python -c "import backend; from importlib.metadata import version; print('PASS: quickstart install', version('rag'))"
+
+# Start from the clean interpreter image: no checkout, editable install, or build tools.
+FROM ${PYTHON_IMAGE} AS wheel
+COPY --from=uv /uv /usr/local/bin/uv
+COPY --from=wheel-build /opt/venv /opt/venv
+COPY --from=wheel-build /dist/wheel-manifest.json /checks/wheel-manifest.json
+COPY tests/smoke/check_wheel.py /checks/check_wheel.py
+WORKDIR /run-api
+ENV UV_PYTHON_DOWNLOADS=never \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+CMD ["uv", "run", "--no-project", "--python", "/opt/venv/bin/python", "python", "-I", "/checks/check_wheel.py"]
+
 FROM source AS local-embeddings
 RUN --mount=type=cache,id=rag-smoke-uv,target=/root/.cache/uv \
     uv sync --locked --no-default-groups --no-install-project --extra local-embeddings \

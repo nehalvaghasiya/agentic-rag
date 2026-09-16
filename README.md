@@ -41,13 +41,13 @@ Install the locked runtime dependencies with `uv`. The UI defaults to local
 Sentence Transformers embeddings, which require the `local-embeddings` extra:
 
 ```bash
-uv sync --locked --no-default-groups --no-install-project --extra local-embeddings
+uv sync --locked --no-default-groups --extra local-embeddings
 ```
 
 For hosted embeddings or deterministic development, install the core runtime:
 
 ```bash
-uv sync --locked --no-default-groups --no-install-project
+uv sync --locked --no-default-groups
 ```
 
 For hosted embeddings, set `OPENAI_API_KEY` and select a `text-embedding-*` model
@@ -56,9 +56,8 @@ when creating a knowledge base. For offline deterministic development, set
 Transformers, and Sentence Transformers. Local models download weights on first
 use; those model files are separate from the Python dependency lockfile.
 
-`--no-install-project` is a temporary source-checkout workaround for I002: the
-wheel configuration still targets the absent `src/rag` package. Run these
-commands from the repository root. To install development tools as well, omit
+Run these commands from the repository root. They install the backend package
+along with its dependencies. To install development tools as well, omit
 `--no-default-groups`; retain `--extra local-embeddings` when using local models.
 
 Run the API server through uv so it uses the synced environment:
@@ -170,7 +169,7 @@ Base URL: `http://127.0.0.1:8001`
 
 - Data storage is local under `.data/` by default.
 - CORS is enabled for common local dev origins.
-- Runtime dependency validation: [isolated smoke tests](tests/smoke/README.md).
+- Runtime dependency and installed-wheel validation: [isolated smoke tests](tests/smoke/README.md).
 
 ## Troubleshooting
 
