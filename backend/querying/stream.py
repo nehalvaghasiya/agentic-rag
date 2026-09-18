@@ -53,39 +53,51 @@ async def stream_query(
     llm = get_llm(settings)
 
     # Step 1: Analyzing
-    yield _sse("step", {
-        "type": "analyzing",
-        "title": "Analyzing question",
-        "description": "Understanding your query...",
-    })
+    yield _sse(
+        "step",
+        {
+            "type": "analyzing",
+            "title": "Analyzing question",
+            "description": "Understanding your query...",
+        },
+    )
     await asyncio.sleep(0.05)
 
     # Step 2: Rewrite query
-    yield _sse("step", {
-        "type": "rewriting",
-        "title": "Optimizing search",
-        "description": "Creating an optimized search query...",
-    })
+    yield _sse(
+        "step",
+        {
+            "type": "rewriting",
+            "title": "Optimizing search",
+            "description": "Creating an optimized search query...",
+        },
+    )
 
     query = await asyncio.to_thread(rewrite_query, question, llm)
 
     # Step 3: Search
-    yield _sse("step", {
-        "type": "searching",
-        "title": "Searching documents",
-        "description": f"Searching for: {query[:50]}...",
-        "details": {"query": query},
-    })
+    yield _sse(
+        "step",
+        {
+            "type": "searching",
+            "title": "Searching documents",
+            "description": f"Searching for: {query[:50]}...",
+            "details": {"query": query},
+        },
+    )
 
     docs = await asyncio.to_thread(retrieve, query, store, settings.top_k)
 
     # Step 4: Grade
-    yield _sse("step", {
-        "type": "grading",
-        "title": "Evaluating results",
-        "description": f"Checking relevance of {len(docs)} documents...",
-        "details": {"count": len(docs)},
-    })
+    yield _sse(
+        "step",
+        {
+            "type": "grading",
+            "title": "Evaluating results",
+            "description": f"Checking relevance of {len(docs)} documents...",
+            "details": {"count": len(docs)},
+        },
+    )
 
     docs = await asyncio.to_thread(grade, question, docs, llm)
 
@@ -110,24 +122,29 @@ async def stream_query(
         similarity_score = doc.metadata.get("similarity_score")
         score_percent = round(similarity_score * 100, 1) if similarity_score is not None else None
 
-        sources.append({
-            "file_name": Path(source_path).name,
-            "page": page_number,
-            "chunk": doc.metadata.get("chunk_index"),
-            "snippet": doc.page_content[:200],
-            "score": score_percent,
-            "metadata": doc.metadata,
-        })
+        sources.append(
+            {
+                "file_name": Path(source_path).name,
+                "page": page_number,
+                "chunk": doc.metadata.get("chunk_index"),
+                "snippet": doc.page_content[:200],
+                "score": score_percent,
+                "metadata": doc.metadata,
+            }
+        )
 
     if sources:
         yield _sse("sources", {"sources": sources})
 
     # Step 5: Generate with streaming
-    yield _sse("step", {
-        "type": "generating",
-        "title": "Generating answer",
-        "description": f"Synthesizing from {len(docs)} sources...",
-    })
+    yield _sse(
+        "step",
+        {
+            "type": "generating",
+            "title": "Generating answer",
+            "description": f"Synthesizing from {len(docs)} sources...",
+        },
+    )
 
     full_answer = ""
 
@@ -171,7 +188,7 @@ async def stream_query(
         full_answer = await asyncio.to_thread(generate, question, docs, llm)
         # Simulate streaming by chunking
         for i in range(0, len(full_answer), 4):
-            yield _sse("token", {"token": full_answer[i:i+4]})
+            yield _sse("token", {"token": full_answer[i : i + 4]})
             await asyncio.sleep(0.01)
 
     yield _sse("complete", {"answer": full_answer})
@@ -200,11 +217,14 @@ async def stream_chat(
         yield _sse("error", {"message": "LLM not configured. Set OPENAI_API_KEY."})
         return
 
-    yield _sse("step", {
-        "type": "generating",
-        "title": "Thinking",
-        "description": "Processing your message...",
-    })
+    yield _sse(
+        "step",
+        {
+            "type": "generating",
+            "title": "Thinking",
+            "description": "Processing your message...",
+        },
+    )
 
     # Create simple message list
     lc_messages = [HumanMessage(content=message)]
@@ -253,7 +273,7 @@ async def stream_chat(
             response = await asyncio.to_thread(llm.invoke, lc_messages)
             full_answer = str(getattr(response, "content", response))
             for i in range(0, len(full_answer), 4):
-                yield _sse("token", {"token": full_answer[i:i+4]})
+                yield _sse("token", {"token": full_answer[i : i + 4]})
                 await asyncio.sleep(0.01)
 
         yield _sse("complete", {"answer": full_answer})
