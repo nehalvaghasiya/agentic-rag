@@ -74,7 +74,9 @@ class HFEmbedder:
         Args:
             model_name: HuggingFace model name or path.
         """
-        from sentence_transformers import SentenceTransformer
+        from sentence_transformers import (  # pyright: ignore[reportMissingImports]
+            SentenceTransformer,
+        )
 
         self._model = SentenceTransformer(model_name)
 
