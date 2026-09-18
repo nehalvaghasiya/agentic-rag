@@ -42,7 +42,7 @@ def get_llm(settings: Settings):
     from langchain_openai import ChatOpenAI
 
     return ChatOpenAI(
-        api_key=settings.openai_api_key.get_secret_value(),
+        api_key=settings.openai_api_key,
         model=settings.openai_model,
         base_url=settings.openai_base_url,
     )
@@ -71,7 +71,7 @@ def get_embedder(model_name: str, settings: Settings) -> Embedder:
         from langchain_openai import OpenAIEmbeddings
 
         return OpenAIEmbeddings(
-            api_key=settings.openai_api_key.get_secret_value(),
+            api_key=settings.openai_api_key,
             model=model_name,
         )
 
