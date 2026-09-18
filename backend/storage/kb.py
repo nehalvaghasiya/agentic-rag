@@ -87,8 +87,12 @@ class KBStore:
         doc_metas = []
 
         for f in files:
+            filename = f.filename
+            if not filename:
+                raise ValueError("Uploaded file must have a filename")
+
             content = await f.read()
-            file_path = upload_dir / f.filename
+            file_path = upload_dir / filename
 
             # Load file into documents
             docs = load_file(file_path, content)
@@ -98,8 +102,8 @@ class KBStore:
             suffix = file_path.suffix.lower().lstrip(".")
             doc_metas.append(
                 DocumentMeta(
-                    id=f"doc_{f.filename}",
-                    name=f.filename,
+                    id=f"doc_{filename}",
+                    name=filename,
                     type=suffix or "txt",
                     size=len(content),
                     uploaded_at=datetime.now(),

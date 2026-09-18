@@ -13,8 +13,8 @@ from fastapi.responses import StreamingResponse
 
 from backend.config import Settings, get_settings
 from backend.models import (
-    ChatStreamRequest,
     ChatResponse,
+    ChatStreamRequest,
     HealthResponse,
     KnowledgeBase,
     ModelConfig,
@@ -261,7 +261,9 @@ async def chat(req: ChatStreamRequest) -> ChatResponse:
     llm = get_llm(effective_settings)
 
     if llm is None:
-        return ChatResponse(answer="LLM not configured. Set OPENAI_API_KEY or use a model override.")
+        return ChatResponse(
+            answer="LLM not configured. Set OPENAI_API_KEY or use a model override."
+        )
 
     lc_messages = []
     for m in req.messages:
