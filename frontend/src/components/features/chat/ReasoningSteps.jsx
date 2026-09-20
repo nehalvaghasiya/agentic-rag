@@ -26,7 +26,7 @@ const stepLabels = {
   generating: "Generating",
 };
 
-function StepItem({ step, isActive, isLast }) {
+function StepItem({ step, isActive }) {
   const Icon = stepIcons[step.type] || Brain;
   const label = stepLabels[step.type] || step.title;
 
@@ -110,7 +110,6 @@ export function ReasoningSteps({ steps, isStreaming }) {
               key={index}
               step={step}
               isActive={isStreaming && index === activeStepIndex}
-              isLast={index === steps.length - 1}
             />
           ))}
         </div>
