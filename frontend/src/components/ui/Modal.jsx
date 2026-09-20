@@ -1,10 +1,10 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 
 export function Modal({ open, title, onClose, children, footer }) {
   return (
     <AnimatePresence>
       {open ? (
-        <motion.div
+        <Motion.div
           className="fixed inset-0 z-50 flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -19,7 +19,7 @@ export function Modal({ open, title, onClose, children, footer }) {
             onClick={onClose}
           />
 
-          <motion.div
+          <Motion.div
             className="relative mx-4 w-full max-w-2xl overflow-hidden rounded-xl border border-border bg-surface"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -42,8 +42,8 @@ export function Modal({ open, title, onClose, children, footer }) {
             {footer ? (
               <div className="border-t border-border px-5 py-4">{footer}</div>
             ) : null}
-          </motion.div>
-        </motion.div>
+          </Motion.div>
+        </Motion.div>
       ) : null}
     </AnimatePresence>
   );
