@@ -12,7 +12,7 @@ import { KnowledgeBaseDashboard } from "./views/KnowledgeBaseDashboard";
 function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { knowledgeBases, actions } = useAppState();
+  const { actions } = useAppState();
   const [createKbOpen, setCreateKbOpen] = useState(false);
 
   // Auto-create a chat when user lands on "/" so there's no extra click.
