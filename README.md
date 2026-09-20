@@ -78,7 +78,7 @@ Open API docs:
 
 Prereqs:
 
-- Node.js 18+
+- Node.js 24.21.0 (npm 11.19.0); the repository `.nvmrc` is authoritative
 
 Install dependencies (required before `npm run dev` / `npm run build`):
 
@@ -106,6 +106,14 @@ Build for production (optional):
 ```bash
 cd frontend
 npm run build
+```
+
+Run frontend quality checks:
+
+```bash
+cd frontend
+npm run lint
+npm run type-check
 ```
 
 The UI defaults to calling the backend at `http://127.0.0.1:8001`.
