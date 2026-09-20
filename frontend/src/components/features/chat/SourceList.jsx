@@ -23,7 +23,7 @@ function SourceCard({ source, index, isExpanded, onToggle }) {
 
   // Get meaningful metadata entries (exclude internal fields)
   const metaEntries = Object.entries(meta)
-    .filter(([k, v]) => v !== null && v !== undefined && String(v).length > 0)
+    .filter(([, v]) => v !== null && v !== undefined && String(v).length > 0)
     .filter(([k]) => !["source", "page", "chunk_index", "similarity_score", "page_label"].includes(k))
     .slice(0, 5);
 

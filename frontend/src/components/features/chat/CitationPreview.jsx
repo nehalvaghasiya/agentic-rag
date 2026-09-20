@@ -4,7 +4,7 @@ export function CitationPreview({ source }) {
   const parts = renderHighlightedText(source.snippetText, source.highlight);
   const meta = source.metadata || {};
   const metaLine = Object.entries(meta)
-    .filter(([k, v]) => v !== null && v !== undefined && String(v).length > 0)
+    .filter(([, v]) => v !== null && v !== undefined && String(v).length > 0)
     .filter(([k]) => k !== "source" && k !== "page")
     .slice(0, 3)
     .map(([k, v]) => `${k}=${String(v)}`)

@@ -1,5 +1,9 @@
 # Agentic RAG Frontend
 
+## Prerequisites
+
+- Node.js 24.21.0 (npm 11.19.0); the repository `.nvmrc` is authoritative
+
 ## Dev
 
 Install dependencies (required before `npm run dev` / `npm run build`):
@@ -30,6 +34,16 @@ Create a production build (outputs to `dist/`):
 ```bash
 cd frontend
 npm run build
+```
+
+## Quality checks
+
+Run linting and strict checks for TypeScript source files:
+
+```bash
+cd frontend
+npm run lint
+npm run type-check
 ```
 
 ## Backend API
