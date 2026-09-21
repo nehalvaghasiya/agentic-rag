@@ -151,14 +151,17 @@ failOnWarnings = false
 # skip = "foo.py,bar.py"
 
 [tool.pytest.ini_options]
-python_files = ["*.py"]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+]
+python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 testpaths = [
-    "src",
     "tests",
 ]
-norecursedirs = []
+norecursedirs = ["smoke"]
 filterwarnings = []
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
