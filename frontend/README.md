@@ -46,6 +46,17 @@ npm run lint
 npm run type-check
 ```
 
+Run the headless component tests once, or keep Vitest running while developing:
+
+```bash
+cd frontend
+npm test
+npm run test:watch
+```
+
+Component tests use controlled API fixtures and do not require a running backend
+or provider credentials.
+
 ## Backend API
 
 By default the UI calls the backend at `http://127.0.0.1:8001`.
