@@ -50,4 +50,10 @@ export default defineConfig([
     plugins: reactPlugins,
     rules: reactRules,
   },
+  {
+    files: ['src/test/**/*.{js,jsx,ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])
