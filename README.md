@@ -113,8 +113,13 @@ Run frontend quality checks:
 ```bash
 cd frontend
 npm run lint
+npm test
 npm run type-check
 ```
+
+For interactive component-test development, run `npm run test:watch`. The
+component suite uses local network fixtures and does not require the backend or
+provider credentials.
 
 The UI defaults to calling the backend at `http://127.0.0.1:8001`.
 
