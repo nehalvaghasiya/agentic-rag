@@ -13,6 +13,8 @@
     "build": "vite build",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
+    "test:e2e": "playwright test --config e2e/playwright.config.js",
+    "test:e2e:install": "playwright install chromium",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
     "preview": "vite preview"
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",

@@ -57,6 +57,19 @@ npm run test:watch
 Component tests use controlled API fixtures and do not require a running backend
 or provider credentials.
 
+Run the Chromium browser journeys after syncing the repository's backend
+environment. Install the browser binary once:
+
+```bash
+cd frontend
+npm run test:e2e:install
+npm run test:e2e
+```
+
+Each browser test starts its own Vite and FastAPI processes with scripted
+providers and disposable storage. It does not use provider credentials or
+application data under `.data/`.
+
 ## Backend API
 
 By default the UI calls the backend at `http://127.0.0.1:8001`.

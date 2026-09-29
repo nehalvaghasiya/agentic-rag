@@ -6,7 +6,7 @@ from funlog import log_calls
 from rich import get_console, reconfigure
 from rich import print as rprint
 
-PYTHON_PATHS = ["backend", "devtools"]
+PYTHON_PATHS = ["backend", "devtools", "frontend/e2e/backend_fixture.py"]
 SPELLCHECK_PATHS = [*PYTHON_PATHS, "README.md"]
 
 

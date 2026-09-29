@@ -140,7 +140,7 @@ ignore = [
 ]
 
 [tool.basedpyright]
-include = ["backend", "devtools"]
+include = ["backend", "devtools", "frontend/e2e/backend_fixture.py"]
 pythonVersion = "3.11"
 typeCheckingMode = "standard"
 failOnWarnings = false

@@ -121,6 +121,18 @@ For interactive component-test development, run `npm run test:watch`. The
 component suite uses local network fixtures and does not require the backend or
 provider credentials.
 
+Browser journey tests require the synced backend environment and a one-time
+Chromium installation:
+
+```bash
+cd frontend
+npm run test:e2e:install
+npm run test:e2e
+```
+
+Each journey launches isolated frontend and backend fixtures and blocks external
+provider traffic.
+
 The UI defaults to calling the backend at `http://127.0.0.1:8001`.
 
 To override:
