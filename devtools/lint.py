@@ -6,8 +6,8 @@ from funlog import log_calls
 from rich import get_console, reconfigure
 from rich import print as rprint
 
-PYTHON_PATHS = ["backend", "devtools", "frontend/e2e/backend_fixture.py"]
-SPELLCHECK_PATHS = [*PYTHON_PATHS, "README.md"]
+PYTHON_PATHS = ["src/backend", "devtools", "tests", "src/frontend/e2e/backend_fixture.py"]
+SPELLCHECK_PATHS = ["src/backend", "devtools", "src/frontend/e2e/backend_fixture.py", "README.md"]
 
 
 reconfigure(emoji=not get_console().options.legacy_windows)  # No emojis on legacy windows.
