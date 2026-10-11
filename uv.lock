@@ -1929,6 +1929,17 @@ dev = [
     { name = "rich" },
     { name = "ruff" },
 ]
+quality = [
+    { name = "basedpyright" },
+    { name = "codespell" },
+    { name = "funlog" },
+    { name = "rich" },
+    { name = "ruff" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1957,6 +1968,17 @@ dev = [
     { name = "pytest-sugar", specifier = ">=1.0.0" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruff", specifier = ">=0.11.9" },
+]
+quality = [
+    { name = "basedpyright", specifier = ">=1.29.1" },
+    { name = "codespell", specifier = ">=2.4.1" },
+    { name = "funlog", specifier = ">=0.2.1" },
+    { name = "rich", specifier = ">=14.0.0" },
+    { name = "ruff", specifier = ">=0.11.9" },
+]
+test = [
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-asyncio", specifier = ">=1.2.0" },
 ]
 
 [[package]]
