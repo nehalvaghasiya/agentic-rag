@@ -209,12 +209,13 @@ uv run --no-sync python -m devtools.check
 ```
 
 The runner requires uv 0.12.1, a supported Python interpreter, the Node version in
-`.nvmrc`, npm 11.19.0, actionlint 1.7.12 on `PATH`, Docker with Buildx, installed
-frontend dependencies, and headless Chromium. Install frontend dependencies with
+`.nvmrc`, npm 11.19.0, actionlint 1.7.12 and ShellCheck 0.11.0 on `PATH`, Docker with
+Buildx, installed frontend dependencies, and headless Chromium. Install frontend dependencies with
 `npm ci` and the browser with `npm run test:e2e:install` from `src/frontend`.
-For Linux x86_64, the verified actionlint installer is
+For Linux x86_64, the verified installer for workflow tools is
 `bash devtools/install_actionlint.sh INSTALL_DIRECTORY`; add that directory to `PATH`.
-Other platforms can use the official actionlint release for their platform.
+It installs both actionlint and ShellCheck. Other platforms can use the official
+releases of both tools for their platform.
 
 Local pytest uses the active Python version; package smoke tests cover all three
 interpreters. CI performs the full regression matrix in clean environments. The

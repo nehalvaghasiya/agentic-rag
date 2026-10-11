@@ -22,6 +22,7 @@ def main() -> int:
             "node": "v" + (ROOT / ".nvmrc").read_text().strip(),
             "npm": package["packageManager"].removeprefix("npm@"),
             "actionlint": "1.7.12\n",
+            "shellcheck": "ShellCheck - shell script analysis tool\nversion: 0.11.0\n",
         }
         for tool, version in expected.items():
             flag = "-version" if tool == "actionlint" else "--version"
@@ -32,7 +33,7 @@ def main() -> int:
         frontend = ROOT / "src/frontend"
         stages = [
             ("source layout", [sys.executable, "-m", "devtools.ci", "layout"], ROOT),
-            ("workflow lint", ["actionlint"], ROOT),
+            ("workflow lint", ["actionlint", "-shellcheck", "shellcheck"], ROOT),
             ("lock freshness", ["uv", "lock", "--check"], ROOT),
             (
                 "frontend lock freshness",

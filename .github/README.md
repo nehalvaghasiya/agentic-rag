@@ -12,7 +12,7 @@ GitHub rollout work.
 
 | Job | Installation | Checks |
 | --- | --- | --- |
-| Workflow and layout | Verified actionlint 1.7.12; no application dependencies | All workflow files; tracked source layout |
+| Workflow and layout | Verified actionlint 1.7.12 and ShellCheck 0.11.0; no application dependencies | All workflow files; tracked source layout |
 | Backend quality | Python 3.12.14; core + `quality` group | Spelling, Ruff lint/format, basedpyright |
 | Backend tests | Python matrix; core + `test` group | Offline pytest regression suite |
 | Backend package | Digest-pinned Python/uv Docker images | Core dependency smoke and installed wheel smoke |
@@ -78,6 +78,12 @@ run `uv run --no-sync python -m devtools.check`. The command verifies tool versi
 and runs every check family; pytest uses the active supported Python interpreter,
 while package smoke tests use the entire pinned matrix. It returns nonzero and names
 the failed stage. It does not install dependencies, apply fixes, or change locks.
+
+Workflow lint requires both actionlint 1.7.12 and ShellCheck 0.11.0. Install both
+with `bash devtools/install_actionlint.sh INSTALL_DIRECTORY` on Linux x86_64 and
+add that directory to `PATH`. The local runner checks both versions before linting;
+CI invokes the verified ShellCheck binary explicitly. actionlint otherwise silently
+skips shell analysis when ShellCheck is missing, which can conceal hosted failures.
 
 Individual standard-library helpers are:
 

@@ -42,10 +42,10 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - name: Install verified actionlint
+      - name: Install verified actionlint and ShellCheck
         run: bash devtools/install_actionlint.sh "$RUNNER_TEMP/bin"
       - name: Lint all workflows
-        run: '"$RUNNER_TEMP/bin/actionlint"'
+        run: '"$RUNNER_TEMP/bin/actionlint" -shellcheck "$RUNNER_TEMP/bin/shellcheck"'
       - name: Validate layout and publish Python matrix
         id: matrix
         run: |
@@ -172,7 +172,7 @@ jobs:
           PYTHON_VERSION: ${{ matrix.python }}
           PYTHON_IMAGE: ${{ matrix.image }}
         run: |
-          printf 'Package checks: Python %s; uv 0.12.1; image `%s`\n' "$PYTHON_VERSION" "$PYTHON_IMAGE" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Package checks: Python %s; uv 0.12.1; image %s\n' "$PYTHON_VERSION" "$PYTHON_IMAGE" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
