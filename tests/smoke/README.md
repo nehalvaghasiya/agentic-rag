@@ -72,7 +72,7 @@ docker run --rm --network none agentic-rag-smoke:wheel-py312
 ```
 
 The build stage runs `uv build --wheel --no-sources` and compares the archive
-against every Python module under `backend/`. It rejects missing modules,
+against every Python module under `src/backend/`. It rejects missing modules,
 unexpected top-level contents, and the nonexistent `rag` console entry point.
 The image context excludes Git metadata, so this also exercises the configured
 fallback version. The harness records the artifact's filename, version, and SHA-256
@@ -150,7 +150,7 @@ the updates, including security fixes.
 A cached successful build may reuse its install checks; add `--no-cache` to
 force those steps to execute again. Runtime checks execute on every run.
 
-I005 owns the broader regression suite, and I008 can reuse these commands in CI.
+CI requires core and wheel smoke checks on Python 3.11–3.13. The optional local-embeddings target is manual only. See [CI documentation](../../.github/README.md).
 
 ## I002 validation results
 

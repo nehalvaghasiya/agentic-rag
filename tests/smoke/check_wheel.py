@@ -25,11 +25,25 @@ from urllib.error import URLError
 from urllib.request import ProxyHandler, build_opener
 
 
+def development_requirements(metadata: dict, group: str = "dev") -> list[str]:
+    """Expand PEP 735 group references without installing development tooling."""
+    requirements = []
+    for requirement in metadata["dependency-groups"][group]:
+        if isinstance(requirement, str):
+            requirements.append(requirement)
+        else:
+            requirements.extend(development_requirements(metadata, requirement["include-group"]))
+    return requirements
+
+
 def inspect_wheel(directory: Path, source: Path) -> None:
     wheels = list(directory.glob("*.whl"))
     assert len(wheels) == 1, f"Expected one freshly built wheel, found {wheels}"
     wheel = wheels[0]
-    expected = {path.relative_to(source).as_posix() for path in (source / "backend").rglob("*.py")}
+    source_root = source / "src"
+    expected = {
+        path.relative_to(source_root).as_posix() for path in (source_root / "backend").rglob("*.py")
+    }
     assert "backend/main.py" in expected and "backend/__init__.py" in expected
     with zipfile.ZipFile(wheel) as archive:
         names = set(archive.namelist())
@@ -54,7 +68,7 @@ def inspect_wheel(directory: Path, source: Path) -> None:
 
     project = tomllib.loads((source / "pyproject.toml").read_text())
     forbidden = [
-        re.split(r"[<>=!~;\[]", req, maxsplit=1)[0] for req in project["dependency-groups"]["dev"]
+        re.split(r"[<>=!~;\[]", req, maxsplit=1)[0] for req in development_requirements(project)
     ]
     manifest = {
         "wheel": wheel.name,

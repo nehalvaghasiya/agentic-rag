@@ -10,7 +10,7 @@ import { expect, test as base } from "@playwright/test";
 
 const E2E_ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const FRONTEND_ROOT = resolve(E2E_ROOT, "..");
-const PROJECT_ROOT = resolve(FRONTEND_ROOT, "..");
+const PROJECT_ROOT = resolve(FRONTEND_ROOT, "../..");
 const TEMP_PREFIX = "agentic-rag-e2e-";
 const STARTUP_TIMEOUT_MS = 30_000;
 const STOP_TIMEOUT_MS = 5_000;
@@ -264,7 +264,7 @@ async function startHarness() {
       [
         "-m",
         "uvicorn",
-        "frontend.e2e.backend_fixture:app",
+        "src.frontend.e2e.backend_fixture:app",
         "--app-dir",
         PROJECT_ROOT,
         "--host",

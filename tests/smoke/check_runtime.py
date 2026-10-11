@@ -24,7 +24,19 @@ from urllib.error import URLError
 from urllib.request import ProxyHandler, Request, build_opener
 
 ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = ROOT / "src"
 LOCAL_PACKAGES = ("sentence-transformers", "transformers", "torch")
+
+
+def development_requirements(metadata: dict, group: str = "dev") -> list[str]:
+    """Expand PEP 735 group references without installing development tooling."""
+    requirements = []
+    for requirement in metadata["dependency-groups"][group]:
+        if isinstance(requirement, str):
+            requirements.append(requirement)
+        else:
+            requirements.extend(development_requirements(metadata, requirement["include-group"]))
+    return requirements
 
 
 def installed_packages() -> dict[str, str]:
@@ -46,7 +58,7 @@ def check_environment(profile: str) -> None:
 
     metadata = tomllib.loads((ROOT / "pyproject.toml").read_text())
     installed = installed_packages()
-    for requirement in metadata["dependency-groups"]["dev"]:
+    for requirement in development_requirements(metadata):
         name = re.split(r"[<>=!~;\[]", requirement, maxsplit=1)[0]
         assert name not in installed, f"Development dependency installed: {name}"
     for name in LOCAL_PACKAGES:
@@ -94,9 +106,9 @@ def pdf_fixture() -> bytes:
 def check_imports(profile: str) -> None:
     check_environment(profile)
     # This harness checks source dependencies; check_wheel.py checks installed artifacts.
-    sys.path.insert(0, str(ROOT))
-    for path in sorted((ROOT / "backend").rglob("*.py")):
-        parts = path.relative_to(ROOT).with_suffix("").parts
+    sys.path.insert(0, str(SOURCE_ROOT))
+    for path in sorted((SOURCE_ROOT / "backend").rglob("*.py")):
+        parts = path.relative_to(SOURCE_ROOT).with_suffix("").parts
         module = ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
         importlib.import_module(module)
         print(f"Imported {module}", flush=True)
@@ -169,7 +181,7 @@ def running_server(directory: Path, mode: str):
                 "uvicorn",
                 "backend.main:app",
                 "--app-dir",
-                str(ROOT),
+                str(SOURCE_ROOT),
                 "--host",
                 "127.0.0.1",
                 "--port",

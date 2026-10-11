@@ -19,15 +19,15 @@ Agentic RAG is a full-stack Retrieval-Augmented Generation (RAG) app:
 
 ## Repository layout
 
-- `backend/` — FastAPI API server and RAG pipeline
-  - `backend/main.py` — FastAPI app entry point
-  - `backend/routes.py` — HTTP routes (`/api/*`)
-  - `backend/config.py` — settings (env) and prompt templates
-  - `backend/models.py` — Pydantic request/response models and streaming event shapes
-  - `backend/indexing/` — file loading, chunking, embedding
-  - `backend/storage/` — KB manifest + persisted vector store
-  - `backend/querying/` — RAG nodes and SSE streaming
-- `frontend/` — React app (Vite) with a KB dashboard and chat UI
+- `src/backend/` — FastAPI API server and RAG pipeline
+  - `src/backend/main.py` — FastAPI app entry point
+  - `src/backend/routes.py` — HTTP routes (`/api/*`)
+  - `src/backend/config.py` — settings (env) and prompt templates
+  - `src/backend/models.py` — Pydantic request/response models and streaming event shapes
+  - `src/backend/indexing/` — file loading, chunking, embedding
+  - `src/backend/storage/` — KB manifest + persisted vector store
+  - `src/backend/querying/` — RAG nodes and SSE streaming
+- `src/frontend/` — React app (Vite) with a KB dashboard and chat UI
 
 ## Quickstart
 
@@ -83,35 +83,28 @@ Prereqs:
 Install dependencies (required before `npm run dev` / `npm run build`):
 
 ```bash
-cd frontend
+cd src/frontend
 npm ci
-```
-
-If you prefer (or if you don't have a lockfile), use:
-
-```bash
-cd frontend
-npm install
 ```
 
 Run the dev server:
 
 ```bash
-cd frontend
+cd src/frontend
 npm run dev
 ```
 
 Build for production (optional):
 
 ```bash
-cd frontend
+cd src/frontend
 npm run build
 ```
 
 Run frontend quality checks:
 
 ```bash
-cd frontend
+cd src/frontend
 npm run lint
 npm test
 npm run type-check
@@ -125,7 +118,7 @@ Browser journey tests require the synced backend environment and a one-time
 Chromium installation:
 
 ```bash
-cd frontend
+cd src/frontend
 npm run test:e2e:install
 npm run test:e2e
 ```
@@ -138,7 +131,7 @@ The UI defaults to calling the backend at `http://127.0.0.1:8001`.
 To override:
 
 ```bash
-cd frontend
+cd src/frontend
 VITE_API_URL=http://127.0.0.1:8001 npm run dev
 ```
 
@@ -195,6 +188,45 @@ Base URL: `http://127.0.0.1:8001`
 - Data storage is local under `.data/` by default.
 - CORS is enabled for common local dev origins.
 - Runtime dependency and installed-wheel validation: [isolated smoke tests](tests/smoke/README.md).
+
+### Required checks
+
+Application projects live under `src/backend` and `src/frontend`; Python metadata,
+backend tests, developer tools, and CI remain at the repository root. Python imports
+still use `backend`. Install the backend before running it or its tests.
+
+CI uses locked, fresh environments for quality checks, offline regression tests,
+core/wheel package smoke tests, frontend component tests/build, and headless Chromium
+journeys. The backend test/package matrix covers Python 3.11–3.13. CI installs no
+local embedding packages or model weights. Frontend types retain the existing policy:
+strict checks for TS/TSX files, without checking existing JavaScript.
+
+For a prepared developer environment, run all check families from the root:
+
+```bash
+uv sync --locked
+uv run --no-sync python -m devtools.check
+```
+
+The runner requires uv 0.12.1, a supported Python interpreter, the Node version in
+`.nvmrc`, npm 11.19.0, actionlint 1.7.12 and ShellCheck 0.11.0 on `PATH`, Docker with
+Buildx, installed frontend dependencies, and headless Chromium. Install frontend dependencies with
+`npm ci` and the browser with `npm run test:e2e:install` from `src/frontend`.
+For Linux x86_64, the verified installer for workflow tools is
+`bash devtools/install_actionlint.sh INSTALL_DIRECTORY`; add that directory to `PATH`.
+It installs both actionlint and ShellCheck. Other platforms can use the official
+releases of both tools for their platform.
+
+Local pytest uses the active Python version; package smoke tests cover all three
+interpreters. CI performs the full regression matrix in clean environments. The
+local runner never installs dependencies or rewrites source; frontend builds and
+test reports are ignored artifacts.
+
+Minimal backend installations are `uv sync --locked --no-default-groups --group test`
+for regression tests and `uv sync --locked --no-default-groups --group quality` for
+quality tools. The normal `uv sync --locked` retains the combined developer setup.
+
+See [CI configuration, failure validation, and merge-protection rollout](.github/README.md).
 
 ## Troubleshooting
 

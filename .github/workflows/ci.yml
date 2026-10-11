@@ -1,0 +1,313 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+    inputs:
+      clean_install:
+        description: Bypass persistent dependency caches
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  UV_PYTHON_DOWNLOADS: never
+  PYTHONNOUSERSITE: '1'
+  PYTHONDONTWRITEBYTECODE: '1'
+  HF_HUB_OFFLINE: '1'
+  TRANSFORMERS_OFFLINE: '1'
+
+jobs:
+  workflow:
+    name: Workflow and layout
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install verified actionlint and ShellCheck
+        run: bash devtools/install_actionlint.sh "$RUNNER_TEMP/bin"
+      - name: Lint all workflows
+        run: '"$RUNNER_TEMP/bin/actionlint" -shellcheck "$RUNNER_TEMP/bin/shellcheck"'
+      - name: Validate layout and publish Python matrix
+        id: matrix
+        run: |
+          python3 -m devtools.ci layout
+          printf 'matrix=%s\n' "$(python3 -m devtools.ci matrix)" >> "$GITHUB_OUTPUT"
+      - name: Verify tracked files are unchanged
+        run: git diff --exit-code
+
+  backend_quality:
+    name: Backend quality
+    needs: workflow
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12.14'
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        id: uv
+        with:
+          version: '0.12.1'
+          enable-cache: ${{ !inputs.clean_install }}
+          cache-local-path: ${{ runner.temp }}/uv-cache
+          cache-suffix: python-3.12.14-uv-0.12.1
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            .github/workflows/ci.yml
+      - name: Install locked core and quality tools
+        run: |
+          mkdir -p "$RUNNER_TEMP/reports"
+          uv cache clean rag
+          uv sync --locked --no-default-groups --group quality 2>&1 | tee "$RUNNER_TEMP/reports/backend-install.log"
+      - name: Check spelling, lint, formatting, and types
+        run: uv run --no-sync python -m devtools.lint 2>&1 | tee "$RUNNER_TEMP/reports/backend-quality.log"
+      - name: Verify tracked files are unchanged
+        run: git diff --exit-code
+      - name: Record versions and remove local-project cache
+        if: always() && steps.uv.outcome == 'success'
+        run: |
+          uv cache clean rag
+          printf 'Backend quality: %s; %s\n' "$(python --version)" "$(uv --version)" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: backend-quality-failure
+          path: ${{ runner.temp }}/reports
+          retention-days: 7
+          if-no-files-found: ignore
+
+  backend_tests:
+    name: Backend tests (Python ${{ matrix.label }})
+    needs: workflow
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.workflow.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        id: uv
+        with:
+          version: '0.12.1'
+          enable-cache: ${{ !inputs.clean_install }}
+          cache-local-path: ${{ runner.temp }}/uv-cache
+          cache-suffix: python-${{ matrix.python }}-uv-0.12.1
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            .github/workflows/ci.yml
+      - name: Install locked core and test dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/reports"
+          uv cache clean rag
+          uv sync --locked --no-default-groups --group test 2>&1 | tee "$RUNNER_TEMP/reports/backend-install.log"
+      - name: Run offline regression tests
+        run: uv run --no-sync python -m pytest -p no:sugar --junitxml="$RUNNER_TEMP/reports/backend.xml" 2>&1 | tee "$RUNNER_TEMP/reports/backend-tests.log"
+      - name: Verify tracked files are unchanged
+        run: git diff --exit-code
+      - name: Record versions and remove local-project cache
+        if: always() && steps.uv.outcome == 'success'
+        run: |
+          uv cache clean rag
+          printf 'Backend tests: %s; %s\n' "$(python --version)" "$(uv --version)" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: backend-tests-${{ matrix.label }}-failure
+          path: ${{ runner.temp }}/reports
+          retention-days: 7
+          if-no-files-found: ignore
+
+  backend_package:
+    name: Backend package (Python ${{ matrix.label }})
+    needs: workflow
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.workflow.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build fresh core and wheel environments; run offline smoke tests
+        env:
+          PYTHON_LABEL: ${{ matrix.label }}
+        run: python3 -m devtools.ci package --python "$PYTHON_LABEL" --log-dir "$RUNNER_TEMP/reports"
+      - name: Verify tracked files are unchanged
+        run: git diff --exit-code
+      - name: Record pinned runtime
+        if: always()
+        env:
+          PYTHON_VERSION: ${{ matrix.python }}
+          PYTHON_IMAGE: ${{ matrix.image }}
+        run: |
+          printf 'Package checks: Python %s; uv 0.12.1; image %s\n' "$PYTHON_VERSION" "$PYTHON_IMAGE" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: backend-package-${{ matrix.label }}-failure
+          path: ${{ runner.temp }}/reports
+          retention-days: 7
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend quality, tests, and build
+    needs: workflow
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: ${{ !inputs.clean_install && 'npm' || '' }}
+          package-manager-cache: false
+          cache-dependency-path: |
+            src/frontend/package-lock.json
+            src/frontend/package.json
+            .nvmrc
+      - name: Install exact npm and locked dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/reports"
+          npm_version="$(node -p "require('./package.json').packageManager.replace(/^npm@/, '')")"
+          if [[ "$(npm --version)" != "$npm_version" ]]; then
+            npm install --global "npm@$npm_version" --no-audit --no-fund
+          fi
+          printf 'Frontend: Node %s; npm %s\n' "$(node --version)" "$(npm --version)" >> "$GITHUB_STEP_SUMMARY"
+          python3 ../../devtools/ci.py frontend-lock
+          npm ci --no-audit --no-fund 2>&1 | tee "$RUNNER_TEMP/reports/frontend-install.log"
+      - name: Lint
+        run: npm run lint 2>&1 | tee "$RUNNER_TEMP/reports/frontend-lint.log"
+      - name: Type-check
+        run: npm run type-check 2>&1 | tee "$RUNNER_TEMP/reports/frontend-types.log"
+      - name: Component tests
+        run: npm test -- --reporter=default --reporter=junit --outputFile="$RUNNER_TEMP/reports/frontend.xml" 2>&1 | tee "$RUNNER_TEMP/reports/frontend-tests.log"
+      - name: Production build
+        run: npm run build 2>&1 | tee "$RUNNER_TEMP/reports/frontend-build.log"
+      - name: Verify tracked files are unchanged
+        run: git diff --exit-code
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: frontend-failure
+          path: ${{ runner.temp }}/reports
+          retention-days: 7
+          if-no-files-found: ignore
+
+  browser:
+    name: Chromium browser journeys
+    needs: workflow
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12.14'
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        id: uv
+        with:
+          version: '0.12.1'
+          enable-cache: ${{ !inputs.clean_install }}
+          cache-local-path: ${{ runner.temp }}/uv-cache
+          cache-suffix: python-3.12.14-uv-0.12.1
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            .github/workflows/ci.yml
+      - name: Install locked core backend
+        run: |
+          mkdir -p "$RUNNER_TEMP/reports"
+          uv cache clean rag
+          uv sync --locked --no-default-groups 2>&1 | tee "$RUNNER_TEMP/reports/backend-install.log"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: ${{ !inputs.clean_install && 'npm' || '' }}
+          package-manager-cache: false
+          cache-dependency-path: |
+            src/frontend/package-lock.json
+            src/frontend/package.json
+            .nvmrc
+      - name: Install exact npm, frontend dependencies, and headless Chromium
+        working-directory: src/frontend
+        run: |
+          npm_version="$(node -p "require('./package.json').packageManager.replace(/^npm@/, '')")"
+          if [[ "$(npm --version)" != "$npm_version" ]]; then
+            npm install --global "npm@$npm_version" --no-audit --no-fund
+          fi
+          printf 'Browser: %s; %s; Node %s; npm %s\n' "$(python --version)" "$(uv --version)" "$(node --version)" "$(npm --version)" >> "$GITHUB_STEP_SUMMARY"
+          python3 ../../devtools/ci.py frontend-lock
+          npm ci --no-audit --no-fund 2>&1 | tee "$RUNNER_TEMP/reports/frontend-install.log"
+          npm exec -- playwright install --with-deps --only-shell chromium 2>&1 | tee "$RUNNER_TEMP/reports/browser-install.log"
+      - name: Run isolated browser journeys
+        working-directory: src/frontend
+        run: npm run test:e2e 2>&1 | tee "$RUNNER_TEMP/reports/browser.log"
+      - name: Verify tracked files are unchanged
+        run: git diff --exit-code
+      - name: Remove local-project cache
+        if: always() && steps.uv.outcome == 'success'
+        run: uv cache clean rag
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: browser-failure
+          path: |
+            ${{ runner.temp }}/reports
+            src/frontend/playwright-report
+            src/frontend/test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+  required:
+    name: Required CI
+    needs: [workflow, backend_quality, backend_tests, backend_package, frontend, browser]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Require every job to succeed
+        env:
+          CI_RESULTS: ${{ toJSON(needs) }}
+        run: python3 -m devtools.ci required
