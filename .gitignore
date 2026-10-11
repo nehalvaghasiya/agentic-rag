@@ -40,8 +40,8 @@ MANIFEST
 docs/
 
 # Data files
-backend/.data/
-backend/.tmp
+src/backend/.data/
+src/backend/.tmp
 .data
 
 # PyInstaller
