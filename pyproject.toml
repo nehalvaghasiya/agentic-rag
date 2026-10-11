@@ -57,15 +57,21 @@ local-embeddings = [
 
 # Dev dependencies
 [dependency-groups]
-dev = [
+test = [
     "pytest>=8.3.5",
     "pytest-asyncio>=1.2.0",
-    "pytest-sugar>=1.0.0",
+]
+quality = [
     "ruff>=0.11.9",
     "codespell>=2.4.1",
     "rich>=14.0.0",
     "basedpyright>=1.29.1",
     "funlog>=0.2.1",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "quality" },
+    "pytest-sugar>=1.0.0",
 ]
 
 # Build system
@@ -74,7 +80,20 @@ dev = [
 # https://github.com/ninoseki/uv-dynamic-versioning/
 
 [build-system]
-requires = ["hatchling", "uv-dynamic-versioning"]
+# Pin the complete build dependency graph; uv.lock covers project dependencies,
+# whereas PEP 517 resolves these separately in an isolated build environment.
+requires = [
+    "hatchling==1.28.0",
+    "uv-dynamic-versioning==0.13.0",
+    "dunamai==1.26.0",
+    "jinja2==3.1.6",
+    "markupsafe==3.0.3",
+    "packaging==25.0",
+    "pathspec==0.12.1",
+    "pluggy==1.6.0",
+    "tomlkit==0.13.3",
+    "trove-classifiers==2025.9.11.17",
+]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -92,7 +111,7 @@ fallback-version = "0.1.0"
 
 [tool.hatch.build.targets.wheel]
 # The source location for the package.
-packages = ["backend"]
+packages = ["src/backend"]
 
 
 # Settings
@@ -140,7 +159,8 @@ ignore = [
 ]
 
 [tool.basedpyright]
-include = ["backend", "devtools", "frontend/e2e/backend_fixture.py"]
+include = ["src/backend", "devtools", "src/frontend/e2e/backend_fixture.py"]
+extraPaths = ["src"]
 pythonVersion = "3.11"
 typeCheckingMode = "standard"
 failOnWarnings = false
