@@ -9,21 +9,14 @@
 Install dependencies (required before `npm run dev` / `npm run build`):
 
 ```bash
-cd frontend
+cd src/frontend
 npm ci
-```
-
-If you prefer, use:
-
-```bash
-cd frontend
-npm install
 ```
 
 Run the dev server:
 
 ```bash
-cd frontend
+cd src/frontend
 npm run dev
 ```
 
@@ -32,7 +25,7 @@ npm run dev
 Create a production build (outputs to `dist/`):
 
 ```bash
-cd frontend
+cd src/frontend
 npm run build
 ```
 
@@ -41,7 +34,7 @@ npm run build
 Run linting and strict checks for TypeScript source files:
 
 ```bash
-cd frontend
+cd src/frontend
 npm run lint
 npm run type-check
 ```
@@ -49,7 +42,7 @@ npm run type-check
 Run the headless component tests once, or keep Vitest running while developing:
 
 ```bash
-cd frontend
+cd src/frontend
 npm test
 npm run test:watch
 ```
@@ -61,7 +54,7 @@ Run the Chromium browser journeys after syncing the repository's backend
 environment. Install the browser binary once:
 
 ```bash
-cd frontend
+cd src/frontend
 npm run test:e2e:install
 npm run test:e2e
 ```
@@ -77,6 +70,6 @@ By default the UI calls the backend at `http://127.0.0.1:8001`.
 To override:
 
 ```bash
-cd frontend
+cd src/frontend
 VITE_API_URL=http://127.0.0.1:8001 npm run dev
 ```

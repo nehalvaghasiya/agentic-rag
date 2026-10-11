@@ -3,8 +3,9 @@
 !pyproject.toml
 !uv.lock
 !README.md
-!backend/
-!backend/**/*.py
+!src/
+!src/backend/
+!src/backend/**/*.py
 !tests/
 !tests/smoke/
 !tests/smoke/check_runtime.py

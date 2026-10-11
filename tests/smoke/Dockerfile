@@ -2,6 +2,7 @@
 ARG PYTHON_IMAGE=python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
 FROM ghcr.io/astral-sh/uv:0.12.1@sha256:cf4eedcaa81655197f625739489effcbe71b61ceb1506f332c3facae5deceded AS uv
 FROM ${PYTHON_IMAGE} AS source
+ARG UV_CACHE_ID=rag-smoke-uv
 COPY --from=uv /uv /usr/local/bin/uv
 WORKDIR /app
 ENV UV_PYTHON_DOWNLOADS=never \
@@ -10,12 +11,12 @@ ENV UV_PYTHON_DOWNLOADS=never \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 COPY pyproject.toml uv.lock README.md ./
-COPY backend/ ./backend/
+COPY src/backend/ ./src/backend/
 COPY tests/smoke/check_runtime.py ./tests/smoke/check_runtime.py
 
 FROM source AS wheel-build
 COPY tests/smoke/check_wheel.py ./tests/smoke/check_wheel.py
-RUN --mount=type=cache,id=rag-smoke-uv,target=/root/.cache/uv \
+RUN --mount=type=cache,id=${UV_CACHE_ID},target=/root/.cache/uv \
     uv build --wheel --no-sources --out-dir /dist \
     && python tests/smoke/check_wheel.py --inspect /dist --source-root /app \
     && uv export --locked --no-default-groups --no-emit-project --no-hashes \
@@ -40,14 +41,14 @@ ENV UV_PYTHON_DOWNLOADS=never \
 CMD ["uv", "run", "--no-project", "--python", "/opt/venv/bin/python", "python", "-I", "/checks/check_wheel.py"]
 
 FROM source AS local-embeddings
-RUN --mount=type=cache,id=rag-smoke-uv,target=/root/.cache/uv \
+RUN --mount=type=cache,id=${UV_CACHE_ID},target=/root/.cache/uv \
     uv sync --locked --no-default-groups --no-install-project --extra local-embeddings \
     && uv run --no-sync python tests/smoke/check_runtime.py --check-lock --profile local-embeddings
 CMD ["uv", "run", "--no-sync", "python", "-I", "/app/tests/smoke/check_runtime.py", "--profile", "local-embeddings"]
 
 # Keep the smaller core profile as the default build target.
 FROM source AS core
-RUN --mount=type=cache,id=rag-smoke-uv,target=/root/.cache/uv \
+RUN --mount=type=cache,id=${UV_CACHE_ID},target=/root/.cache/uv \
     uv sync --locked --no-default-groups --no-install-project \
     && uv run --no-sync python tests/smoke/check_runtime.py --check-lock
 CMD ["uv", "run", "--no-sync", "python", "-I", "/app/tests/smoke/check_runtime.py", "--profile", "core"]
