@@ -118,11 +118,12 @@ def check_imports(profile: str) -> None:
     from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
     assert callable(ChatOpenAI) and callable(OpenAIEmbeddings)
-    from backend.config import get_settings
+    from backend.config import Settings
     from backend.indexing.loader import load_file
 
-    assert get_settings().mode == "production"
-    assert get_settings().openai_api_key is None
+    settings = Settings()
+    assert settings.mode == "production"
+    assert settings.openai_api_key is None
     documents = load_file(Path.cwd() / "fixture.pdf", pdf_fixture())
     assert len(documents) == 1
     assert "Dependency smoke PDF" in documents[0].page_content
@@ -179,7 +180,8 @@ def running_server(directory: Path, mode: str):
                 "-I",
                 "-m",
                 "uvicorn",
-                "backend.main:app",
+                "backend.main:create_app",
+                "--factory",
                 "--app-dir",
                 str(SOURCE_ROOT),
                 "--host",

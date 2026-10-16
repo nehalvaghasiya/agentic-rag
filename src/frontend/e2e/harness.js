@@ -264,7 +264,8 @@ async function startHarness() {
       [
         "-m",
         "uvicorn",
-        "src.frontend.e2e.backend_fixture:app",
+        "src.frontend.e2e.backend_fixture:create_app",
+        "--factory",
         "--app-dir",
         PROJECT_ROOT,
         "--host",

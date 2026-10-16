@@ -7,8 +7,12 @@ from typing import Any
 
 import httpx
 import pytest
+from fastapi import FastAPI
 from langchain_core.documents import Document
 from pydantic import SecretStr
+
+from backend.config import Settings
+from backend.dependencies import get_app_settings
 
 
 async def create_kb(
@@ -49,13 +53,15 @@ async def test_root_health_and_model_configuration_are_safe(
 
 @pytest.mark.asyncio
 async def test_model_configuration_reports_but_never_returns_secret(
-    app_client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+    app_client: httpx.AsyncClient, app: FastAPI, settings: Settings
 ) -> None:
-    import backend.routes as routes
-
     secret = "test-only-provider-secret"
-    configured = routes._settings.model_copy(update={"openai_api_key": SecretStr(secret)})
-    monkeypatch.setattr(routes, "_settings", configured)
+    configured = settings.model_copy(update={"openai_api_key": SecretStr(secret)})
+
+    async def override_settings() -> Settings:
+        return configured
+
+    app.dependency_overrides[get_app_settings] = override_settings
 
     response = await app_client.get("/api/models/config")
 

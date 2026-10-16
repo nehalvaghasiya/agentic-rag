@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from backend.config import Settings, get_settings, reset_settings
+from backend.config import Settings
 from backend.indexing.embedder import HashEmbedder
 from backend.llm import get_embedder, get_llm
 
@@ -34,18 +34,17 @@ def test_explicit_settings_ignore_dotenv_and_environment(
     assert settings.openai_api_key is None
 
 
-def test_settings_singleton_can_be_reset(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_settings_construction_reads_current_environment(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("MODE", "deterministic")
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "first"))
-    first = get_settings()
+    first = Settings()
 
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "second"))
-    assert get_settings() is first
-    assert get_settings().data_dir == tmp_path / "first"
-
-    reset_settings()
-    second = get_settings()
+    second = Settings()
     assert second is not first
+    assert first.data_dir == tmp_path / "first"
     assert second.data_dir == tmp_path / "second"
 
 

@@ -11,7 +11,8 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
-from backend.config import Settings, get_settings
+from backend.config import Settings
+from backend.dependencies import KBStoreDep, ServicesDep, SettingsDep
 from backend.models import (
     ChatResponse,
     ChatStreamRequest,
@@ -24,13 +25,8 @@ from backend.models import (
     Source,
 )
 from backend.querying import stream_chat, stream_query
-from backend.storage import KBStore
 
 router = APIRouter()
-
-# Initialize KB store with settings
-_settings = get_settings()
-_kb_store = KBStore(Path(_settings.data_dir))
 
 
 def _apply_model_override(base_settings: Settings, override: ModelConfig | None) -> Settings:
@@ -105,25 +101,25 @@ def _build_sources(docs: list) -> list[Source]:
 
 
 @router.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
+async def health_check(services: ServicesDep) -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse()
 
 
 @router.get("/models/config", response_model=ModelConfigResponse)
-async def get_model_config() -> ModelConfigResponse:
+async def get_model_config(settings: SettingsDep) -> ModelConfigResponse:
     """Get current model configuration (without exposing API key)."""
     return ModelConfigResponse(
-        model=_settings.openai_model,
-        base_url=_settings.openai_base_url,
-        has_api_key=_settings.openai_api_key is not None,
+        model=settings.openai_model,
+        base_url=settings.openai_base_url,
+        has_api_key=settings.openai_api_key is not None,
     )
 
 
 @router.get("/kb", response_model=list[KnowledgeBase])
-async def list_knowledge_bases() -> list[KnowledgeBase]:
+async def list_knowledge_bases(kb_store: KBStoreDep) -> list[KnowledgeBase]:
     """List all knowledge bases."""
-    return _kb_store.list_all()
+    return kb_store.list_all()
 
 
 @router.post("/kb", response_model=KnowledgeBase)
@@ -131,6 +127,8 @@ async def create_knowledge_base(
     name: Annotated[str, Form()],
     embedding_model: Annotated[str, Form()],
     files: Annotated[list[UploadFile], File()],
+    settings: SettingsDep,
+    kb_store: KBStoreDep,
 ) -> KnowledgeBase:
     """Create a new knowledge base with uploaded files.
 
@@ -139,15 +137,15 @@ async def create_knowledge_base(
     - embedding_model: Model to use for embeddings
     - files: One or more files to index
     """
-    return await _kb_store.create(name, embedding_model, files, _settings)
+    return await kb_store.create(name, embedding_model, files, settings)
 
 
 @router.get("/kb/{kb_id}")
-async def get_knowledge_base(kb_id: str) -> KnowledgeBase:
+async def get_knowledge_base(kb_id: str, kb_store: KBStoreDep) -> KnowledgeBase:
     """Get details for a specific knowledge base."""
-    if not _kb_store.exists(kb_id):
+    if not kb_store.exists(kb_id):
         raise HTTPException(status_code=404, detail="Knowledge base not found")
-    kbs = _kb_store.list_all()
+    kbs = kb_store.list_all()
     for kb in kbs:
         if kb.id == kb_id:
             return kb
@@ -155,7 +153,9 @@ async def get_knowledge_base(kb_id: str) -> KnowledgeBase:
 
 
 @router.post("/kb/{kb_id}/query/stream")
-async def query_knowledge_base_stream(kb_id: str, req: QueryRequest) -> StreamingResponse:
+async def query_knowledge_base_stream(
+    kb_id: str, req: QueryRequest, settings: SettingsDep, kb_store: KBStoreDep
+) -> StreamingResponse:
     """Query a knowledge base with streaming response.
 
     Returns Server-Sent Events (SSE) with:
@@ -166,14 +166,14 @@ async def query_knowledge_base_stream(kb_id: str, req: QueryRequest) -> Streamin
 
     Accepts optional model_config_override to use custom LLM settings.
     """
-    result = _kb_store.load(kb_id, _settings)
+    result = kb_store.load(kb_id, settings)
     if result is None:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
     manifest, store = result
 
     # Apply model config override if provided
-    effective_settings = _apply_model_override(_settings, req.model_config_override)
+    effective_settings = _apply_model_override(settings, req.model_config_override)
 
     return StreamingResponse(
         stream_query(req.question, (manifest, store), effective_settings),
@@ -187,18 +187,20 @@ async def query_knowledge_base_stream(kb_id: str, req: QueryRequest) -> Streamin
 
 
 @router.post("/kb/{kb_id}/query", response_model=QueryResponse)
-async def query_knowledge_base(kb_id: str, req: QueryRequest) -> QueryResponse:
+async def query_knowledge_base(
+    kb_id: str, req: QueryRequest, settings: SettingsDep, kb_store: KBStoreDep
+) -> QueryResponse:
     """Query a knowledge base (non-streaming).
 
     This endpoint exists as a fallback for environments that don't support SSE
     streaming (for example, embedded webviews).
     """
-    result = _kb_store.load(kb_id, _settings)
+    result = kb_store.load(kb_id, settings)
     if result is None:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
     _, store = result
-    effective_settings = _apply_model_override(_settings, req.model_config_override)
+    effective_settings = _apply_model_override(settings, req.model_config_override)
 
     from backend.llm import get_llm
     from backend.querying.nodes import generate, grade, retrieve, rewrite_query
@@ -216,7 +218,7 @@ async def query_knowledge_base(kb_id: str, req: QueryRequest) -> QueryResponse:
 
 
 @router.post("/chat/stream")
-async def chat_stream(req: ChatStreamRequest) -> StreamingResponse:
+async def chat_stream(req: ChatStreamRequest, settings: SettingsDep) -> StreamingResponse:
     """Direct chat without knowledge base (streaming).
 
     Returns Server-Sent Events (SSE) with:
@@ -233,7 +235,7 @@ async def chat_stream(req: ChatStreamRequest) -> StreamingResponse:
     )
 
     # Apply model config override if provided
-    effective_settings = _apply_model_override(_settings, req.model_config_override)
+    effective_settings = _apply_model_override(settings, req.model_config_override)
 
     return StreamingResponse(
         stream_chat(last_user, effective_settings),
@@ -247,7 +249,7 @@ async def chat_stream(req: ChatStreamRequest) -> StreamingResponse:
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatStreamRequest) -> ChatResponse:
+async def chat(req: ChatStreamRequest, settings: SettingsDep) -> ChatResponse:
     """General chat (non-streaming).
 
     This endpoint exists as a fallback for environments that don't support SSE
@@ -257,7 +259,7 @@ async def chat(req: ChatStreamRequest) -> ChatResponse:
 
     from backend.llm import get_llm
 
-    effective_settings = _apply_model_override(_settings, req.model_config_override)
+    effective_settings = _apply_model_override(settings, req.model_config_override)
     llm = get_llm(effective_settings)
 
     if llm is None:

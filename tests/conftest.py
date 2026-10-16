@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import asyncio
 import socket
-from collections.abc import AsyncIterator, Callable, Iterator
+from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
 from typing import Any, BinaryIO, cast
 
 import httpx
 import pytest
-from fastapi import UploadFile
+from fastapi import FastAPI, UploadFile
 from langchain_core.documents import Document
 
-from backend.config import Settings, reset_settings
+from backend.config import Settings
+from backend.main import create_app
 from backend.storage import KBStore, VectorStore
 from tests.support import ScriptedEmbedder, ScriptedLLM
 
@@ -26,6 +27,7 @@ SENSITIVE_ENVIRONMENT = (
     "MODE",
     "DATA_DIR",
     "UPLOAD_DIR",
+    "CORS_ORIGINS",
     "SERPAPI_API_KEY",
     "GOOGLE_CSE_ID",
     "HTTP_PROXY",
@@ -40,15 +42,12 @@ SENSITIVE_ENVIRONMENT = (
 
 
 @pytest.fixture(autouse=True)
-def isolated_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
+def isolated_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Keep settings, environment reads, and relative files isolated per test."""
 
     for name in SENSITIVE_ENVIRONMENT:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.chdir(tmp_path)
-    reset_settings()
-    yield
-    reset_settings()
 
 
 @pytest.fixture(autouse=True)
@@ -149,28 +148,15 @@ def vector_store() -> VectorStore:
 
 
 @pytest.fixture
-async def app_client(
-    monkeypatch: pytest.MonkeyPatch,
-    settings: Settings,
-    kb_store: KBStore,
-    deny_network: None,
-) -> AsyncIterator[httpx.AsyncClient]:
-    """Expose the global app with route state replaced by per-test services."""
+def app(settings: Settings) -> FastAPI:
+    """Configure an independent application without starting its services."""
+    return create_app(settings)
 
-    del deny_network
-    import backend.config as config
 
-    monkeypatch.setattr(config, "_settings", settings)
-
-    # These imports must remain inside the fixture: both modules construct state
-    # during import, after the temporary working directory and settings are active.
-    import backend.main as main
-    import backend.routes as routes
-
-    monkeypatch.setattr(main, "settings", settings)
-    monkeypatch.setattr(routes, "_settings", settings)
-    monkeypatch.setattr(routes, "_kb_store", kb_store)
-
-    transport = httpx.ASGITransport(app=main.app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
-        yield client
+@pytest.fixture
+async def app_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
+    """Start per-test services and close HTTP clients before application cleanup."""
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            yield client

@@ -6,9 +6,11 @@ import socket
 from pathlib import Path
 from typing import Any
 
-import backend.config as config_module
+from fastapi import FastAPI
+
 import backend.llm as provider_module
 from backend.config import Settings
+from backend.main import create_app as create_backend_app
 from tests.support import ScriptedEmbedder, ScriptedLLM
 
 FIXTURE_TEXT = Path(__file__).with_name("data").joinpath("browser-fixture.txt").read_text().strip()
@@ -56,11 +58,11 @@ def _scripted_embedder(model_name: str, settings: Settings) -> ScriptedEmbedder:
     )
 
 
-# Install all test seams before importing the module that constructs the global app.
-provider_module.get_llm = _scripted_llm
-provider_module.get_embedder = _scripted_embedder
-config_module._settings = Settings(_env_file=None)  # pyright: ignore[reportCallIssue]
+def create_app() -> FastAPI:
+    """Build the browser fixture with explicit settings and scripted providers."""
+    provider_module.get_llm = _scripted_llm
+    provider_module.get_embedder = _scripted_embedder
+    return create_backend_app(Settings(_env_file=None))  # pyright: ignore[reportCallIssue]
 
-from backend.main import app
 
-__all__ = ["SCRIPTED_ANSWER", "app"]
+__all__ = ["SCRIPTED_ANSWER", "create_app"]

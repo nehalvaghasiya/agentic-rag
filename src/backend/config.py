@@ -88,22 +88,4 @@ class Prompts:
     )
 
 
-# Singleton settings instance
-_settings: Settings | None = None
-
-
-def get_settings() -> Settings:
-    """Get the application settings (singleton)."""
-    global _settings
-    if _settings is None:
-        _settings = Settings()
-    return _settings
-
-
-def reset_settings() -> None:
-    """Reset settings (for testing)."""
-    global _settings
-    _settings = None
-
-
-__all__ = ["Settings", "Prompts", "get_settings", "reset_settings"]
+__all__ = ["Settings", "Prompts"]
