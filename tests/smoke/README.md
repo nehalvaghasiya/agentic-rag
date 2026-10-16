@@ -52,7 +52,8 @@ Each container run checks:
 - The transformer stack is absent in core and imports in the optional profile.
 - Hosted integration classes import, and a generated text PDF loads through the
   real PDF loader.
-- Uvicorn starts, `/api/health` returns `{"status":"ok"}`, and OpenAPI renders.
+- Uvicorn starts through `backend.main:create_app --factory`, `/api/health`
+  returns `{"status":"ok"}`, and OpenAPI renders.
 - A separate deterministic server accepts a multipart text upload and persists
   its manifest and vectors in temporary storage.
 
