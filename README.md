@@ -63,7 +63,7 @@ along with its dependencies. To install development tools as well, omit
 Run the API server through uv so it uses the synced environment:
 
 ```bash
-uv run --no-sync python -m uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload
+uv run --no-sync python -m uvicorn backend.main:create_app --factory --host 0.0.0.0 --port 8001 --reload
 ```
 
 For server deployment, omit `--reload`. Repeating the core-only sync removes the
@@ -138,6 +138,18 @@ VITE_API_URL=http://127.0.0.1:8001 npm run dev
 ## Configuration
 
 Backend settings are loaded from environment variables (and optionally `.env`). See `.env.example`.
+
+`create_app()` reads a fresh settings snapshot when called. Storage initializes
+during application startup, and lifespan shutdown releases application services
+without deleting persisted knowledge bases. Importing backend modules does not
+load settings or create storage directories.
+
+For an embedded application or test, call `create_app(settings)` with explicit
+`Settings` and run its ASGI lifespan. Each application owns its settings and store;
+use different `data_dir` values to isolate persisted files. Tests can override
+FastAPI dependencies or supply a `services_factory` that registers resource
+cleanup on the provided `AsyncExitStack`. The former `backend.main:app` entrypoint
+and singleton settings helpers have been replaced by this factory interface.
 
 Common variables:
 
