@@ -110,10 +110,11 @@ def check_installation(manifest: dict) -> None:
         assert location == Path(dist.locate_file(filename)).resolve(), location
         assert location.is_relative_to(prefix) and "site-packages" in location.parts, location
         assert hashlib.sha256(location.read_bytes()).hexdigest() == digest, location
-    from backend.config import get_settings
+    from backend.config import Settings
 
-    assert get_settings().mode == "production"
-    assert get_settings().openai_api_key is None
+    settings = Settings()
+    assert settings.mode == "production"
+    assert settings.openai_api_key is None
     print(
         json.dumps(
             {"python": platform.python_version(), "wheel": manifest["wheel"], "packages": installed}
@@ -141,7 +142,8 @@ def check_startup(directory: Path) -> None:
                 "-I",
                 "-m",
                 "uvicorn",
-                "backend.main:app",
+                "backend.main:create_app",
+                "--factory",
                 "--host",
                 "127.0.0.1",
                 "--port",
