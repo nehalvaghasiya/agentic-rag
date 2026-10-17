@@ -10,7 +10,7 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.config import Settings
+from backend.config import Settings, resolve_settings
 from backend.routes import router
 from backend.services import ServicesFactory, build_services
 
@@ -21,7 +21,7 @@ def create_app(
     services_factory: ServicesFactory = build_services,
 ) -> FastAPI:
     """Configure a new application; acquire its services only during startup."""
-    app_settings = Settings() if settings is None else settings.model_copy(deep=True)
+    app_settings = resolve_settings(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
