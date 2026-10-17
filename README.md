@@ -139,6 +139,29 @@ VITE_API_URL=http://127.0.0.1:8001 npm run dev
 
 Backend settings are loaded from environment variables (and optionally `.env`). See `.env.example`.
 
+Runtime configuration is validated before the application or its services are
+constructed. Invalid settings fail startup with a diagnostic naming the setting
+and its required constraint, without echoing configuration values or credentials.
+
+| Setting | Default | Constraint |
+| --- | --- | --- |
+| `CHUNK_SIZE` | `800` | Integer greater than or equal to 1 |
+| `CHUNK_OVERLAP` | `120` | Integer greater than or equal to 0 and smaller than `CHUNK_SIZE` |
+| `TOP_K` | `5` | Integer greater than or equal to 1 |
+| `MAX_RETRIES` | `2` | Integer greater than or equal to 0; zero permits no retries |
+| `MODE` | `production` | Exactly `production` or `deterministic` |
+
+These limits have no hard maximums. For example, `CHUNK_SIZE=1` is valid with
+`CHUNK_OVERLAP=0`; reducing chunk size below the default overlap also requires
+adjusting overlap. Invalid values are rejected rather than clamped. Numeric
+environment strings are parsed as integers; booleans and fractional values are
+rejected. Empty and incorrectly capitalized modes are rejected.
+
+Settings passed to `create_app(settings)` are revalidated without reloading the
+environment or `.env`. Normal settings loading retains explicit argument,
+environment, `.env`, then default precedence. `CORS_ORIGINS`, when set in the
+environment or `.env`, must be a JSON array of strings.
+
 `create_app()` reads a fresh settings snapshot when called. Storage initializes
 during application startup, and lifespan shutdown releases application services
 without deleting persisted knowledge bases. Importing backend modules does not
@@ -161,6 +184,9 @@ Common variables:
 Notes:
 
 - The backend supports a **deterministic mode** (`Settings.mode = "deterministic"`) which disables LLM calls and uses hash embeddings. This is useful for tests and offline development.
+- Production mode can start without an API key. Deterministic mode ignores
+  provider credentials. Validation does not contact providers or load embedding
+  models.
 
 ## API overview
 
