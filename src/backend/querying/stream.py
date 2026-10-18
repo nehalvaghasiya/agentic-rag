@@ -7,10 +7,18 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections.abc import AsyncIterator
+import queue
+import threading
+from collections.abc import AsyncGenerator, Callable, Iterator
+from contextlib import aclosing
 from pathlib import Path
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
+from starlette.requests import ClientDisconnect
+
+from backend.errors import ApplicationError, correlation_context, report_failure, stage_context
+from backend.models import ErrorCode
 from backend.querying.nodes import generate_stream, grade, retrieve, rewrite_query
 
 if TYPE_CHECKING:
@@ -36,7 +44,80 @@ async def stream_query(
     question: str,
     kb: tuple[KBManifest, VectorStore],
     settings: Settings,
-) -> AsyncIterator[str]:
+) -> AsyncGenerator[str, None]:
+    """Stream a query with one correlated terminal failure boundary."""
+    async with aclosing(_safe_stream(_query(question, kb, settings), "query")) as events:
+        async for event in events:
+            yield event
+
+
+async def _safe_stream(
+    events: AsyncGenerator[str, None], operation: str
+) -> AsyncGenerator[str, None]:
+    correlation_token = correlation_context.set(correlation_context.get() or str(uuid4()))
+    stage_token = stage_context.set(f"{operation}.initialize")
+    try:
+        try:
+            async with aclosing(events):
+                async for event in events:
+                    yield event
+        except ClientDisconnect:
+            raise
+        except Exception as exc:
+            failure = report_failure(exc)
+            yield _sse("error", failure.payload())
+    finally:
+        stage_context.reset(stage_token)
+        correlation_context.reset(correlation_token)
+
+
+async def _stream_tokens(
+    produce: Callable[[], Iterator[str]], timeout: float
+) -> AsyncGenerator[str, None]:
+    """Move typed worker failures to the request context; stop on idle expiry."""
+    q: queue.Queue[tuple[str, str | Exception | None]] = queue.Queue()
+    stopped = threading.Event()
+
+    def worker() -> None:
+        try:
+            iterator = produce()
+            try:
+                for token in iterator:
+                    if stopped.is_set():
+                        return
+                    q.put(("token", token))
+            finally:
+                close = getattr(iterator, "close", None)
+                if close is not None:
+                    close()
+            if not stopped.is_set():
+                q.put(("done", None))
+        except Exception as exc:
+            if not stopped.is_set():
+                q.put(("error", exc))
+
+    threading.Thread(target=worker, daemon=True).start()
+    try:
+        while True:
+            try:
+                event_type, data = await asyncio.to_thread(q.get, timeout=timeout)
+            except queue.Empty:
+                raise ApplicationError(ErrorCode.PROVIDER_TIMEOUT) from None
+            if event_type == "done":
+                return
+            if isinstance(data, Exception):
+                raise data
+            if isinstance(data, str):
+                yield data
+    finally:
+        stopped.set()
+
+
+async def _query(
+    question: str,
+    kb: tuple[KBManifest, VectorStore],
+    settings: Settings,
+) -> AsyncGenerator[str, None]:
     """Stream a RAG query with reasoning steps.
 
     Args:
@@ -73,6 +154,7 @@ async def stream_query(
         },
     )
 
+    stage_context.set("query.rewrite")
     query = await asyncio.to_thread(rewrite_query, question, llm)
 
     # Step 3: Search
@@ -86,6 +168,7 @@ async def stream_query(
         },
     )
 
+    stage_context.set("query.retrieve")
     docs = await asyncio.to_thread(retrieve, query, store, settings.top_k)
 
     # Step 4: Grade
@@ -99,9 +182,11 @@ async def stream_query(
         },
     )
 
+    stage_context.set("query.grade")
     docs = await asyncio.to_thread(grade, question, docs, llm)
 
     # Emit sources
+    stage_context.set("query.sources")
     sources = []
     for doc in docs[:5]:
         source_path = doc.metadata.get("source", "unknown")
@@ -147,40 +232,15 @@ async def stream_query(
     )
 
     full_answer = ""
+    stage_context.set("query.generate")
 
     if llm is not None and hasattr(llm, "stream"):
-        # Stream tokens using a thread to avoid blocking the event loop
-        import queue
-        import threading
-
-        q: queue.Queue = queue.Queue()
-
-        def stream_in_thread():
-            try:
-                for token in generate_stream(question, docs, llm):
-                    q.put(("token", token))
-                q.put(("done", None))
-            except Exception as e:
-                q.put(("error", str(e)))
-
-        thread = threading.Thread(target=stream_in_thread, daemon=True)
-        thread.start()
-
-        while True:
-            try:
-                item = await asyncio.to_thread(q.get, timeout=60.0)
-            except Exception:
-                break
-
-            event_type, data = item
-            if event_type == "done":
-                break
-            elif event_type == "error":
-                yield _sse("error", {"message": data})
-                return
-            elif event_type == "token":
-                full_answer += data
-                yield _sse("token", {"token": data})
+        async with aclosing(
+            _stream_tokens(lambda: generate_stream(question, docs, llm), 60.0)
+        ) as tokens:
+            async for token in tokens:
+                full_answer += token
+                yield _sse("token", {"token": token})
     else:
         # Non-streaming fallback
         from backend.querying.nodes import generate
@@ -197,7 +257,14 @@ async def stream_query(
 async def stream_chat(
     message: str,
     settings: Settings,
-) -> AsyncIterator[str]:
+) -> AsyncGenerator[str, None]:
+    """Stream chat with the same terminal failure semantics as HTTP/query."""
+    async with aclosing(_safe_stream(_chat(message, settings), "chat")) as events:
+        async for event in events:
+            yield event
+
+
+async def _chat(message: str, settings: Settings) -> AsyncGenerator[str, None]:
     """Stream a chat response.
 
     Args:
@@ -214,8 +281,7 @@ async def stream_chat(
     llm = get_llm(settings)
 
     if llm is None:
-        yield _sse("error", {"message": "LLM not configured. Set OPENAI_API_KEY."})
-        return
+        raise ApplicationError(ErrorCode.MODEL_NOT_CONFIGURED)
 
     yield _sse(
         "step",
@@ -230,56 +296,28 @@ async def stream_chat(
     lc_messages = [HumanMessage(content=message)]
 
     full_answer = ""
+    stage_context.set("chat.generate")
 
-    try:
-        if hasattr(llm, "stream"):
-            # Use asyncio.to_thread for each chunk to avoid blocking
-            import queue
-            import threading
+    if hasattr(llm, "stream"):
 
-            q: queue.Queue = queue.Queue()
+        def produce() -> Iterator[str]:
+            for chunk in llm.stream(lc_messages):
+                token = getattr(chunk, "content", None)
+                if token:
+                    yield token
 
-            def stream_in_thread():
-                try:
-                    for chunk in llm.stream(lc_messages):
-                        token = getattr(chunk, "content", None)
-                        if token:
-                            q.put(("token", token))
-                    q.put(("done", None))
-                except Exception as e:
-                    q.put(("error", str(e)))
+        async with aclosing(_stream_tokens(produce, 30.0)) as tokens:
+            async for token in tokens:
+                full_answer += token
+                yield _sse("token", {"token": token})
+    else:
+        response = await asyncio.to_thread(llm.invoke, lc_messages)
+        full_answer = str(getattr(response, "content", response))
+        for i in range(0, len(full_answer), 4):
+            yield _sse("token", {"token": full_answer[i : i + 4]})
+            await asyncio.sleep(0.01)
 
-            thread = threading.Thread(target=stream_in_thread, daemon=True)
-            thread.start()
-
-            while True:
-                # Poll the queue with a timeout to avoid blocking forever
-                try:
-                    item = await asyncio.to_thread(q.get, timeout=30.0)
-                except Exception:
-                    break
-
-                event_type, data = item
-                if event_type == "done":
-                    break
-                elif event_type == "error":
-                    yield _sse("error", {"message": data})
-                    return
-                elif event_type == "token":
-                    full_answer += data
-                    yield _sse("token", {"token": data})
-        else:
-            # Non-streaming fallback
-            response = await asyncio.to_thread(llm.invoke, lc_messages)
-            full_answer = str(getattr(response, "content", response))
-            for i in range(0, len(full_answer), 4):
-                yield _sse("token", {"token": full_answer[i : i + 4]})
-                await asyncio.sleep(0.01)
-
-        yield _sse("complete", {"answer": full_answer})
-
-    except Exception as e:
-        yield _sse("error", {"message": str(e)})
+    yield _sse("complete", {"answer": full_answer})
 
 
 __all__ = ["stream_query", "stream_chat"]
