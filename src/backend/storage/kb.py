@@ -12,8 +12,9 @@ from uuid import uuid4
 
 from fastapi import UploadFile
 
+from backend.errors import ApplicationError, validation_issue
 from backend.indexing import chunk_documents, load_file
-from backend.models import DocumentMeta, KBManifest, KnowledgeBase
+from backend.models import DocumentMeta, ErrorCode, KBManifest, KnowledgeBase
 from backend.storage.vector import VectorStore
 
 if TYPE_CHECKING:
@@ -89,7 +90,9 @@ class KBStore:
         for f in files:
             filename = f.filename
             if not filename:
-                raise ValueError("Uploaded file must have a filename")
+                raise ApplicationError(
+                    ErrorCode.VALIDATION_ERROR, details=[validation_issue("files")]
+                )
 
             content = await f.read()
             file_path = upload_dir / filename
