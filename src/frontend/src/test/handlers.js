@@ -3,6 +3,8 @@ import { http, HttpResponse } from "msw";
 import { API_URL } from "../api/client";
 import {
   chatEventsFixture,
+  correlationIdFixture,
+  errorFixture,
   knowledgeBaseFixture,
   modelConfigFixture,
   serializeSseEvents,
@@ -41,10 +43,9 @@ export function createChatStreamHandler({
 
 export function createChatStreamErrorHandler({
   status = 503,
-  message = "Fixture provider unavailable",
 } = {}) {
   return http.post(`${API_URL}/api/chat/stream`, () =>
-    HttpResponse.text(message, { status })
+    HttpResponse.json(errorFixture(), { status, headers: { "X-Correlation-ID": correlationIdFixture } })
   );
 }
 

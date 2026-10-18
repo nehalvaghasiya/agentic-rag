@@ -8,6 +8,8 @@ import {
   useState,
 } from "react";
 import {
+  ApiError,
+  describeApiError,
   createKnowledgeBase as apiCreateKnowledgeBase,
   listKnowledgeBases,
   getModelConfig,
@@ -152,9 +154,7 @@ export function AppStateProvider({ children }) {
           )
         );
       })
-      .catch((err) => {
-        console.error("Failed to fetch model config:", err);
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -167,10 +167,7 @@ export function AppStateProvider({ children }) {
         if (cancelled) return;
         setKnowledgeBases(kbs.map(normalizeKb));
       })
-      .catch((err) => {
-        // Keep the UI usable even if the backend isn't running.
-        console.error(err);
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -399,12 +396,10 @@ export function AppStateProvider({ children }) {
         let content = "";
         let steps = [];
 
-        console.log("[sendMessage] Calling chatWithLlmStream...");
         await chatWithLlmStream({
           messages: [...history, { role: "user", content: trimmed }],
           modelConfig,
           onEvent: (event) => {
-            console.log("[sendMessage] Received event:", event.type, event.data);
             switch (event.type) {
               case "step":
                 steps = [...steps, event.data];
@@ -417,12 +412,6 @@ export function AppStateProvider({ children }) {
               case "complete":
                 updateStreamingMessage({
                   content: event.data.answer || content,
-                  isStreaming: false,
-                });
-                break;
-              case "error":
-                updateStreamingMessage({
-                  content: `Error: ${event.data.message}`,
                   isStreaming: false,
                 });
                 break;
@@ -459,20 +448,17 @@ export function AppStateProvider({ children }) {
                   isStreaming: false,
                 });
                 break;
-              case "error":
-                updateStreamingMessage({
-                  content: `Error: ${event.data.message}`,
-                  isStreaming: false,
-                });
-                break;
             }
           },
         });
       }
     } catch (err) {
-      console.error("[sendMessage] Error:", err);
       updateStreamingMessage({
-        content: `Query failed: ${err?.message || String(err)}`,
+        content: describeApiError(err),
+        error: err instanceof ApiError ? {
+          code: err.code, message: err.message, retryable: err.retryable,
+          correlationId: err.correlationId, details: err.details, httpStatus: err.httpStatus,
+        } : null,
         isStreaming: false,
       });
     }
