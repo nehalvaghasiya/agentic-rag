@@ -66,7 +66,10 @@ def get_embedder(model_name: str, settings: Settings) -> Embedder:
     # OpenAI embeddings
     if model_name.startswith("text-embedding-"):
         if not settings.openai_api_key:
-            raise ValueError("OpenAI API key required for OpenAI embeddings")
+            from backend.errors import ApplicationError
+            from backend.models import ErrorCode
+
+            raise ApplicationError(ErrorCode.MODEL_NOT_CONFIGURED)
 
         from langchain_openai import OpenAIEmbeddings
 
