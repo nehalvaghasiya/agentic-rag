@@ -203,6 +203,89 @@ Base URL: `http://127.0.0.1:8001`
 - `POST /api/chat/stream` — SSE stream for general chat
   - request body: `{ "messages": [{"role": "user|assistant", "content": "..."}], "model_config_override": ... }`
 
+### Safe failures and correlation
+
+HTTP failures use one JSON envelope. SSE execution failures send the same envelope
+as the data of a terminal `event: error` frame:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Some request fields are invalid. Check the field details.",
+    "retryable": false,
+    "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6",
+    "details": [
+      {"field": "question", "code": "required", "message": "This field is required."}
+    ]
+  }
+}
+```
+
+Every application response includes a server-generated `X-Correlation-ID`, exposed
+to allowed browser origins through CORS. The error body/event carries the same ID;
+client-supplied IDs are ignored. Use this reference to find the matching internal
+JSON diagnostic record. Reverse-proxy failures, network failures and CORS preflight
+responses occur outside the application error boundary.
+
+`details` is omitted for non-validation errors. Validation returns at most 20
+issues, using declared field paths and indexes such as `messages[0].content`.
+Issue codes are `required`, `invalid_type`, `invalid_json`, and `invalid_value`;
+unknown paths become `request`. Submitted values, arbitrary input keys and raw
+validator messages are never returned.
+
+| Code | HTTP status | Retryable | Safe message |
+|---|---:|:---:|---|
+| `BAD_REQUEST` | 400 | No | The request could not be read. Check its format. |
+| `NOT_FOUND` | 404 | No | The requested resource was not found. |
+| `METHOD_NOT_ALLOWED` | 405 | No | This method is not supported for this endpoint. |
+| `CONFLICT` | 409 | No | This request conflicts with the current resource state. Refresh before trying again. |
+| `VALIDATION_ERROR` | 422 | No | Some request fields are invalid. Check the field details. |
+| `RATE_LIMITED` | 429 | Yes | Too many requests. Try again later. |
+| `QUOTA_EXCEEDED` | 429 | No | The provider quota is exhausted. Check billing or quota before trying again. |
+| `MODEL_NOT_CONFIGURED` | 503 | No | Configure a model API key before trying again. |
+| `SERVICE_UNAVAILABLE` | 503 | Yes | The service is temporarily unavailable. Try again later. |
+| `PROVIDER_AUTH_ERROR` | 502 | No | The model provider rejected the credentials or access. Check the model settings. |
+| `PROVIDER_REQUEST_ERROR` | 502 | No | The model provider rejected this request. Check the model settings. |
+| `PROVIDER_UNAVAILABLE` | 503 | Yes | The model provider is temporarily unavailable. Try again later. |
+| `PROVIDER_TIMEOUT` | 504 | Yes | The model provider did not respond in time. Try again later. |
+| `PROVIDER_ERROR` | 502 | No | The model provider could not complete the request. |
+| `INTERNAL_ERROR` | 500 | No | The request could not be completed because of an internal error. |
+| `HTTP_ERROR` | Original status | No | The request could not be completed. |
+
+Retryability is advisory: another attempt may succeed without changing the input,
+configuration or quota. It does not authorize automatic replay or guarantee that a
+failed mutation had no effect. Provider rate limits are retryable; exhausted quota
+requires billing/quota changes. Provider credentials and access failures are
+upstream failures, rather than application authentication failures.
+
+Invalid requests, missing resources and unavailable services fail before a stream
+opens. After SSE headers are sent, HTTP 200 indicates an open connection; only
+`complete` indicates success. Execution failures, including idle queue timeouts
+(30 seconds for chat, 60 for KB queries), end with exactly one `error` and no
+`complete`. Optional rewriting/grading failures keep their existing fallbacks and
+produce safe warning diagnostics. Missing-model chat fails with
+`MODEL_NOT_CONFIGURED`; KB queries retain excerpt-only and empty-evidence answers.
+
+The web client throws `ApiError` for HTTP and SSE failures, retaining `code`,
+`message`, `retryable`, `correlationId`, `details`, and nullable `httpStatus`.
+It displays the safe message, validation issues, retry guidance and reference.
+`NETWORK_ERROR`, `INVALID_RESPONSE`, and `STREAM_INTERRUPTED` represent client-side
+transport/protocol failures; their correlation ID is null unless a valid server
+reference was received. Invalid response bodies and raw network exceptions are not
+displayed. Existing non-streaming compatibility fallback is limited to failures
+before a response is consumed; API errors and interrupted streams never replay it.
+
+Internal diagnostics retain correlation, route template, operation, error category,
+exception classes, numeric provider status and bounded module/function/line stack
+locations. They exclude raw exception messages, locals, absolute paths, headers,
+provider bodies, prompts, document contents and credentials. Startup configuration
+failures retain their existing safe fail-fast behavior.
+
+Backend and frontend error-contract changes must be deployed together. Legacy
+HTTP `detail` and SSE message-only payloads are no longer supported. Successful
+response formats are unchanged; no persistence migration is required.
+
 ## How the RAG pipeline works (current backend)
 
 1. **Indexing** (on KB creation)
@@ -269,7 +352,7 @@ See [CI configuration, failure validation, and merge-protection rollout](.github
 ## Troubleshooting
 
 - Frontend can load without the backend running, but API calls will fail.
-- If chat returns "LLM not configured", set `OPENAI_API_KEY` or use a request-level model override from the UI.
+- If chat returns `MODEL_NOT_CONFIGURED`, set `OPENAI_API_KEY` or use a request-level model override from the UI.
 
 ## License
 
