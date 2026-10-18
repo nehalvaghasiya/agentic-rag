@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from langchain_core.documents import Document
 
 from backend.config import Prompts
+from backend.errors import report_failure
 
 if TYPE_CHECKING:
     from backend.storage.vector import VectorStore
@@ -34,7 +35,8 @@ def rewrite_query(question: str, llm) -> str:
         response = llm.invoke(prompt)
         result = str(getattr(response, "content", response)).strip()
         return result or question
-    except Exception:
+    except Exception as exc:
+        report_failure(exc, operation="query.rewrite", terminal=False)
         return question
 
 
@@ -76,7 +78,8 @@ def grade(question: str, docs: list[Document], llm) -> list[Document]:
 
             if answer.startswith("y"):
                 relevant.append(doc)
-        except Exception:
+        except Exception as exc:
+            report_failure(exc, operation="query.grade", terminal=False)
             # On error, include the document
             relevant.append(doc)
 
@@ -118,11 +121,8 @@ def generate(question: str, docs: list[Document], llm) -> str:
     context = "\n\n".join(context_parts)
     prompt = Prompts.ANSWER.format(question=question, context=context)
 
-    try:
-        response = llm.invoke(prompt)
-        return str(getattr(response, "content", response)).strip()
-    except Exception as e:
-        return f"Error generating answer: {e}"
+    response = llm.invoke(prompt)
+    return str(getattr(response, "content", response)).strip()
 
 
 def generate_stream(question: str, docs: list[Document], llm):
@@ -159,13 +159,10 @@ def generate_stream(question: str, docs: list[Document], llm):
     context = "\n\n".join(context_parts)
     prompt = Prompts.ANSWER.format(question=question, context=context)
 
-    try:
-        for chunk in llm.stream(prompt):
-            token = getattr(chunk, "content", None)
-            if token:
-                yield token
-    except Exception as e:
-        yield f"Error generating answer: {e}"
+    for chunk in llm.stream(prompt):
+        token = getattr(chunk, "content", None)
+        if token:
+            yield token
 
 
 __all__ = ["rewrite_query", "retrieve", "grade", "generate", "generate_stream"]
