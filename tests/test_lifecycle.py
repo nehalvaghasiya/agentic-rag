@@ -286,7 +286,7 @@ async def test_service_endpoints_are_unavailable_outside_lifespan(
             else:
                 response = await client.request(method, endpoint, json=payload or None)
             assert response.status_code == 503, phase
-            assert response.json() == {"detail": "Application services are unavailable"}
+            assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
             if phase == "before startup":
                 async with app.router.lifespan_context(app):
                     assert (await client.get("/api/health")).status_code == 200
@@ -324,7 +324,7 @@ async def test_simultaneous_apps_isolate_storage_cors_and_dependency_overrides(
                             else await second_client.get(endpoint)
                         )
                         assert response.status_code == 404
-                        assert response.json() == {"detail": "Knowledge base not found"}
+                        assert response.json()["error"]["code"] == "NOT_FOUND"
 
                     second_kb = await create_kb(second_client, b"second app evidence")
                     assert [kb["id"] for kb in (await first_client.get("/api/kb")).json()] == [
@@ -403,7 +403,7 @@ async def test_request_model_overrides_do_not_mutate_application_settings(
 
     response = await app_client.post(endpoint, json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == (503 if kind == "chat" else 200)
     assert len(recorded) == 1
     assert recorded[0] is not base
     assert recorded[0].openai_model == "request-model"

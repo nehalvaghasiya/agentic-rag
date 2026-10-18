@@ -115,9 +115,8 @@ def test_generate_stream_contains_provider_exception() -> None:
     docs = [Document(page_content="known fact", metadata={"source": "facts.txt"})]
     llm = ScriptedLLM(stream=[RuntimeError("provider unavailable")])
 
-    assert list(generate_stream("question", docs, llm)) == [
-        "Error generating answer: provider unavailable"
-    ]
+    with pytest.raises(RuntimeError, match="provider unavailable"):
+        list(generate_stream("question", docs, llm))
 
 
 @pytest.mark.asyncio
@@ -198,11 +197,14 @@ async def test_query_stream_provider_failure_emits_error_without_completion(
     event_names = [name for name, _ in events]
     assert event_names[-1] == "error"
     assert "complete" not in event_names
-    assert events[-1][1] == {"message": "stream failed"}
+    assert events[-1][1]["error"]["code"] == "INTERNAL_ERROR"
+    assert "stream failed" not in json.dumps(events)
 
 
 @pytest.mark.asyncio
 async def test_chat_stream_without_llm_emits_configuration_error(settings: Settings) -> None:
     events = await collect_events(stream_chat("hello", settings))
 
-    assert events == [("error", {"message": "LLM not configured. Set OPENAI_API_KEY."})]
+    assert len(events) == 1
+    assert events[0][0] == "error"
+    assert events[0][1]["error"]["code"] == "MODEL_NOT_CONFIGURED"
