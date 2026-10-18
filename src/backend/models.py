@@ -6,9 +6,61 @@ All Pydantic models for API requests, responses, and internal data.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from enum import StrEnum
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class ErrorCode(StrEnum):
+    """Stable public failure categories shared by HTTP and execution events."""
+
+    BAD_REQUEST = "BAD_REQUEST"
+    NOT_FOUND = "NOT_FOUND"
+    METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"
+    CONFLICT = "CONFLICT"
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    RATE_LIMITED = "RATE_LIMITED"
+    QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
+    MODEL_NOT_CONFIGURED = "MODEL_NOT_CONFIGURED"
+    SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
+    PROVIDER_AUTH_ERROR = "PROVIDER_AUTH_ERROR"
+    PROVIDER_REQUEST_ERROR = "PROVIDER_REQUEST_ERROR"
+    PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
+    PROVIDER_TIMEOUT = "PROVIDER_TIMEOUT"
+    PROVIDER_ERROR = "PROVIDER_ERROR"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+    HTTP_ERROR = "HTTP_ERROR"
+
+
+ValidationCode = Literal["required", "invalid_type", "invalid_json", "invalid_value"]
+
+
+class ValidationIssue(BaseModel):
+    """A declared field path and controlled validation explanation; never input."""
+
+    model_config = ConfigDict(extra="forbid")
+    field: str
+    code: ValidationCode
+    message: str
+
+
+class PublicError(BaseModel):
+    """Safe failure information. Retryability is advisory, not replay permission."""
+
+    model_config = ConfigDict(extra="forbid")
+    code: ErrorCode
+    message: str
+    retryable: bool
+    correlation_id: str
+    details: list[ValidationIssue] | None = Field(default=None, max_length=20)
+
+
+class ErrorEnvelope(BaseModel):
+    """Canonical HTTP error body and terminal SSE error data."""
+
+    model_config = ConfigDict(extra="forbid")
+    error: PublicError
 
 
 class ModelConfig(BaseModel):
@@ -137,10 +189,8 @@ class CompleteEvent(BaseModel):
     answer: str
 
 
-class ErrorEvent(BaseModel):
-    """Error event."""
-
-    message: str
+class ErrorEvent(ErrorEnvelope):
+    """Terminal execution failure; serialized identically to HTTP errors."""
 
 
 class ChatResponse(BaseModel):
@@ -158,9 +208,15 @@ class QueryResponse(BaseModel):
 
 # Fix forward reference
 ChatRequest.model_rebuild()
+ChatStreamRequest.model_rebuild()
 
 
 __all__ = [
+    "ErrorCode",
+    "ValidationCode",
+    "ValidationIssue",
+    "PublicError",
+    "ErrorEnvelope",
     # Request models
     "ModelConfig",
     "QueryRequest",
