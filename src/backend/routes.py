@@ -6,16 +6,18 @@ All request/response validation uses Pydantic models from backend.models.
 
 import asyncio
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
 
 from backend.config import Settings
 from backend.dependencies import KBStoreDep, ServicesDep, SettingsDep
+from backend.errors import ApplicationError, stage_context
 from backend.models import (
     ChatResponse,
     ChatStreamRequest,
+    ErrorCode,
     HealthResponse,
     KnowledgeBase,
     ModelConfig,
@@ -27,6 +29,15 @@ from backend.models import (
 from backend.querying import stream_chat, stream_query
 
 router = APIRouter()
+SSE_RESPONSES: dict[int | str, dict[str, Any]] = {
+    200: {
+        "description": (
+            "SSE connection opened. A terminal complete event indicates success; a terminal "
+            "error event carries ErrorEnvelope. No complete event follows an error."
+        ),
+        "content": {"text/event-stream": {"schema": {"type": "string"}}},
+    }
+}
 
 
 def _apply_model_override(base_settings: Settings, override: ModelConfig | None) -> Settings:
@@ -144,15 +155,15 @@ async def create_knowledge_base(
 async def get_knowledge_base(kb_id: str, kb_store: KBStoreDep) -> KnowledgeBase:
     """Get details for a specific knowledge base."""
     if not kb_store.exists(kb_id):
-        raise HTTPException(status_code=404, detail="Knowledge base not found")
+        raise ApplicationError(ErrorCode.NOT_FOUND)
     kbs = kb_store.list_all()
     for kb in kbs:
         if kb.id == kb_id:
             return kb
-    raise HTTPException(status_code=404, detail="Knowledge base not found")
+    raise ApplicationError(ErrorCode.NOT_FOUND)
 
 
-@router.post("/kb/{kb_id}/query/stream")
+@router.post("/kb/{kb_id}/query/stream", response_class=StreamingResponse, responses=SSE_RESPONSES)
 async def query_knowledge_base_stream(
     kb_id: str, req: QueryRequest, settings: SettingsDep, kb_store: KBStoreDep
 ) -> StreamingResponse:
@@ -163,12 +174,13 @@ async def query_knowledge_base_stream(
     - sources: Retrieved source documents
     - token: Streaming answer tokens
     - complete: Final complete event
+    - error: Terminal ErrorEnvelope with the response's X-Correlation-ID
 
     Accepts optional model_config_override to use custom LLM settings.
     """
     result = kb_store.load(kb_id, settings)
     if result is None:
-        raise HTTPException(status_code=404, detail="Knowledge base not found")
+        raise ApplicationError(ErrorCode.NOT_FOUND)
 
     manifest, store = result
 
@@ -197,7 +209,7 @@ async def query_knowledge_base(
     """
     result = kb_store.load(kb_id, settings)
     if result is None:
-        raise HTTPException(status_code=404, detail="Knowledge base not found")
+        raise ApplicationError(ErrorCode.NOT_FOUND)
 
     _, store = result
     effective_settings = _apply_model_override(settings, req.model_config_override)
@@ -205,19 +217,25 @@ async def query_knowledge_base(
     from backend.llm import get_llm
     from backend.querying.nodes import generate, grade, retrieve, rewrite_query
 
+    stage_context.set("query.initialize")
     llm = get_llm(effective_settings)
 
+    stage_context.set("query.rewrite")
     query = await asyncio.to_thread(rewrite_query, req.question, llm)
+    stage_context.set("query.retrieve")
     docs = await asyncio.to_thread(retrieve, query, store, effective_settings.top_k)
+    stage_context.set("query.grade")
     docs = await asyncio.to_thread(grade, req.question, docs, llm)
 
+    stage_context.set("query.sources")
     sources = _build_sources(docs)
+    stage_context.set("query.generate")
     answer = await asyncio.to_thread(generate, req.question, docs, llm)
 
     return QueryResponse(answer=answer, sources=sources)
 
 
-@router.post("/chat/stream")
+@router.post("/chat/stream", response_class=StreamingResponse, responses=SSE_RESPONSES)
 async def chat_stream(req: ChatStreamRequest, settings: SettingsDep) -> StreamingResponse:
     """Direct chat without knowledge base (streaming).
 
@@ -225,6 +243,7 @@ async def chat_stream(req: ChatStreamRequest, settings: SettingsDep) -> Streamin
     - step: Reasoning step updates
     - token: Streaming answer tokens
     - complete: Final complete event
+    - error: Terminal ErrorEnvelope with the response's X-Correlation-ID
 
     Accepts optional model_config_override to use custom LLM settings.
     """
@@ -260,12 +279,11 @@ async def chat(req: ChatStreamRequest, settings: SettingsDep) -> ChatResponse:
     from backend.llm import get_llm
 
     effective_settings = _apply_model_override(settings, req.model_config_override)
+    stage_context.set("chat.initialize")
     llm = get_llm(effective_settings)
 
     if llm is None:
-        return ChatResponse(
-            answer="LLM not configured. Set OPENAI_API_KEY or use a model override."
-        )
+        raise ApplicationError(ErrorCode.MODEL_NOT_CONFIGURED)
 
     lc_messages = []
     for m in req.messages:
@@ -277,6 +295,7 @@ async def chat(req: ChatStreamRequest, settings: SettingsDep) -> ChatResponse:
         else:
             lc_messages.append(HumanMessage(content=m.content))
 
+    stage_context.set("chat.generate")
     response = await asyncio.to_thread(llm.invoke, lc_messages)
     answer = str(getattr(response, "content", response))
     return ChatResponse(answer=answer)

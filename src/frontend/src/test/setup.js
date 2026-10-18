@@ -1,15 +1,15 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup } from "@testing-library/react";
-import { afterAll, afterEach, beforeAll, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
 import { resetCapturedRequests } from "./handlers";
 import { server } from "./server";
 
-Object.defineProperty(window, "matchMedia", {
-  configurable: true,
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
+beforeEach(() => {
+  // Vitest restores mock implementations between tests; motion components need
+  // a working matchMedia object each time they mount.
+  window.matchMedia.mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -18,7 +18,13 @@ Object.defineProperty(window, "matchMedia", {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-  })),
+  }));
+});
+
+Object.defineProperty(window, "matchMedia", {
+  configurable: true,
+  writable: true,
+  value: vi.fn(),
 });
 
 Object.defineProperty(Element.prototype, "scrollIntoView", {

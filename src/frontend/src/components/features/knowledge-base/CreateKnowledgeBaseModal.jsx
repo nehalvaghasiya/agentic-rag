@@ -1,3 +1,4 @@
+import { describeApiError } from "../../../api/client";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -67,7 +68,7 @@ export function CreateKnowledgeBaseModal({ open, onClose, onCreate }) {
               setFiles([]);
               setAdvancedOpen(false);
             } catch (e) {
-              setError(e?.message || String(e));
+              setError(describeApiError(e));
             } finally {
               setSubmitting(false);
             }
@@ -93,7 +94,7 @@ export function CreateKnowledgeBaseModal({ open, onClose, onCreate }) {
     >
       <div className="space-y-4">
         {error ? (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-200">
+          <div className="whitespace-pre-line rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-200">
             {error}
           </div>
         ) : null}

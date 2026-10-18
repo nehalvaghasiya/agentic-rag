@@ -2,78 +2,169 @@ const DEFAULT_API_URL = "http://127.0.0.1:8001";
 
 export const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 
-async function requestJson(path, options = {}) {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-    },
-  });
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALIDATION_CODES = new Set(["required", "invalid_type", "invalid_json", "invalid_value"]);
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`API ${res.status}: ${text || res.statusText}`);
+export class ApiError extends Error {
+  constructor({ code, message, retryable = false, correlationId = null, details = [], httpStatus = null }) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.retryable = retryable;
+    this.correlationId = correlationId;
+    this.details = details;
+    this.httpStatus = httpStatus;
   }
-
-  return res.json();
 }
 
-/**
- * Parse SSE events from a ReadableStream.
- * @param {ReadableStream} stream - The response body stream
- * @param {(event: {type: string, data: object}) => void} onEvent - Callback for each event
- */
-async function parseSSE(stream, onEvent) {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
+function localError(code, correlationId = null, httpStatus = null) {
+  const messages = {
+    NETWORK_ERROR: "The service could not be reached. Check your connection.",
+    INVALID_RESPONSE: "The service returned an invalid response.",
+    STREAM_INTERRUPTED: "The response was interrupted before it finished.",
+  };
+  return new ApiError({
+    code, message: messages[code], correlationId, httpStatus,
+    retryable: code !== "INVALID_RESPONSE",
+  });
+}
 
-  console.log("[SSE] Starting to parse stream");
+function responseId(res) {
+  const id = res.headers.get("X-Correlation-ID");
+  return typeof id === "string" && UUID.test(id) ? id : null;
+}
+
+function fromEnvelope(payload, correlationId = null, httpStatus = null) {
+  const error = payload?.error;
+  const details = error?.details;
+  if (!error || typeof error.code !== "string" || !/^[A-Z_]{1,64}$/.test(error.code) ||
+      typeof error.message !== "string" || !error.message || error.message.length > 512 ||
+      typeof error.retryable !== "boolean" || typeof error.correlation_id !== "string" ||
+      !UUID.test(error.correlation_id) ||
+      (correlationId !== null && correlationId !== error.correlation_id) ||
+      (details !== undefined && (error.code !== "VALIDATION_ERROR" || !Array.isArray(details) ||
+        details.length > 20 || details.some((issue) =>
+          !issue || typeof issue.field !== "string" || issue.field.length > 256 ||
+          !VALIDATION_CODES.has(issue.code) || typeof issue.message !== "string" ||
+          !issue.message || issue.message.length > 256)))) {
+    return localError("INVALID_RESPONSE", correlationId, httpStatus);
+  }
+  return new ApiError({
+    code: error.code, message: error.message, retryable: error.retryable,
+    correlationId: error.correlation_id, details: details || [], httpStatus,
+  });
+}
+
+export function describeApiError(error) {
+  if (!(error instanceof ApiError)) return "The request could not be completed.";
+  const fields = error.details.map((issue) => `${issue.field}: ${issue.message}`);
+  return [
+    error.message, ...fields,
+    error.retryable ? "You can try again later." : null,
+    error.correlationId ? `Reference: ${error.correlationId}` : null,
+  ].filter(Boolean).join("\n");
+}
+
+async function requireOk(res) {
+  if (res.ok) return;
+  let payload;
+  try {
+    payload = await res.json();
+  } catch {
+    throw localError("INVALID_RESPONSE", responseId(res), res.status);
+  }
+  throw fromEnvelope(payload, responseId(res), res.status);
+}
+
+async function requestJson(path, options = {}) {
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, options);
+  } catch {
+    throw localError("NETWORK_ERROR");
+  }
+  await requireOk(res);
+  try {
+    return await res.json();
+  } catch {
+    throw localError("INVALID_RESPONSE", responseId(res), res.status);
+  }
+}
+
+/** Error events reject with ApiError; only successful execution events reach onEvent. */
+async function parseSSE(res, onEvent) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  const correlationId = responseId(res);
+  let buffer = "";
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        console.log("[SSE] Stream complete");
-        break;
+      let chunk;
+      try {
+        chunk = await reader.read();
+      } catch {
+        throw localError("STREAM_INTERRUPTED", correlationId);
       }
-
-      const chunk = decoder.decode(value, { stream: true });
-      console.log("[SSE] Received chunk:", chunk);
-      buffer += chunk;
-      
-      // SSE events are separated by double newlines
+      buffer += decoder.decode(chunk.value, { stream: !chunk.done });
+      buffer = buffer.replace(/\r\n/g, "\n");
       const events = buffer.split("\n\n");
-      buffer = events.pop() || ""; // Keep incomplete event in buffer
-
+      buffer = events.pop() || "";
       for (const eventBlock of events) {
-        if (!eventBlock.trim()) continue;
-        
         const lines = eventBlock.split("\n");
-        let eventType = null;
-        let eventData = null;
-
-        for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith("data: ")) {
-            try {
-              eventData = JSON.parse(line.slice(6));
-            } catch (e) {
-              console.warn("[SSE] Failed to parse JSON:", line.slice(6), e);
-            }
-          }
+        const eventType = lines.find((line) => line.startsWith("event:"))?.slice(6).trim();
+        const data = lines.filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).replace(/^ /, "")).join("\n");
+        if (!data && !eventType) continue; // Heartbeat/comment frame.
+        let eventData;
+        try {
+          eventData = JSON.parse(data);
+        } catch {
+          throw localError("INVALID_RESPONSE", correlationId);
         }
-
-        if (eventType && eventData) {
-          console.log("[SSE] Parsed event:", eventType, eventData);
-          onEvent({ type: eventType, data: eventData });
+        if (eventType === "error") throw fromEnvelope(eventData, correlationId);
+        if (!eventType || !eventData || typeof eventData !== "object" ||
+            (eventType === "complete" && typeof eventData.answer !== "string") ||
+            (eventType === "token" && typeof eventData.token !== "string")) {
+          throw localError("INVALID_RESPONSE", correlationId);
         }
+        onEvent({ type: eventType, data: eventData });
+        if (eventType === "complete") return;
       }
+      if (chunk.done) throw localError("STREAM_INTERRUPTED", correlationId);
     }
   } finally {
+    // A tee'd response can leave cancellation pending until its other reader
+    // closes. Terminal delivery must not wait for transport cleanup.
+    void reader.cancel().catch(() => {});
     reader.releaseLock();
   }
+}
+
+async function requestStream(path, requestBody, fallback, onEvent) {
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+  } catch {
+    // Retain compatibility fallback only before a response is consumed.
+    return completeFallback(await fallback(), onEvent);
+  }
+  await requireOk(res);
+  if (!res.body) return completeFallback(await fallback(), onEvent);
+  if (!res.headers.get("Content-Type")?.startsWith("text/event-stream")) {
+    throw localError("INVALID_RESPONSE", responseId(res), res.status);
+  }
+  await parseSSE(res, onEvent);
+}
+
+function completeFallback(result, onEvent) {
+  onEvent({ type: "step", data: { type: "generating", title: "Generating response", description: "Processing..." } });
+  if (result.sources?.length) onEvent({ type: "sources", data: { sources: result.sources } });
+  onEvent({ type: "complete", data: { answer: result.answer } });
 }
 
 export async function listKnowledgeBases() {
@@ -166,43 +257,10 @@ export async function queryKnowledgeBaseStream({ kbId, question, modelConfig, on
     } : null,
   };
 
-  let res;
-  try {
-    res = await fetch(`${API_URL}/api/kb/${kbId}/query/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
-    });
-  } catch (err) {
-    // Fallback to non-streaming endpoint
-    console.warn("Streaming failed, falling back to non-streaming:", err);
-    const fallbackRes = await queryKnowledgeBase({ kbId, question, modelConfig });
-    onEvent({ type: "step", data: { type: "generating", title: "Generating response", description: "Processing..." } });
-    if (fallbackRes.sources?.length > 0) {
-      onEvent({ type: "sources", data: { sources: fallbackRes.sources } });
-    }
-    onEvent({ type: "complete", data: { answer: fallbackRes.answer } });
-    return;
-  }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`API ${res.status}: ${text || res.statusText}`);
-  }
-
-  if (!res.body) {
-    // Fallback if browser doesn't support streaming
-    console.warn("Browser doesn't support streaming, falling back");
-    const fallbackRes = await queryKnowledgeBase({ kbId, question, modelConfig });
-    onEvent({ type: "step", data: { type: "generating", title: "Generating response", description: "Processing..." } });
-    if (fallbackRes.sources?.length > 0) {
-      onEvent({ type: "sources", data: { sources: fallbackRes.sources } });
-    }
-    onEvent({ type: "complete", data: { answer: fallbackRes.answer } });
-    return;
-  }
-
-  await parseSSE(res.body, onEvent);
+  await requestStream(
+    `/api/kb/${kbId}/query/stream`, requestBody,
+    () => queryKnowledgeBase({ kbId, question, modelConfig }), onEvent,
+  );
 }
 
 /**
@@ -215,8 +273,6 @@ export async function queryKnowledgeBaseStream({ kbId, question, modelConfig, on
  * @returns {Promise<void>}
  */
 export async function chatWithLlmStream({ messages, modelConfig, onEvent }) {
-  console.log("[chatWithLlmStream] Starting with messages:", messages);
-  
   // Build request body with optional model config
   const requestBody = {
     messages,
@@ -227,36 +283,8 @@ export async function chatWithLlmStream({ messages, modelConfig, onEvent }) {
     } : null,
   };
 
-  let res;
-  try {
-    res = await fetch(`${API_URL}/api/chat/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
-    });
-    console.log("[chatWithLlmStream] Response status:", res.status);
-  } catch (err) {
-    // Fallback to non-streaming endpoint
-    console.warn("Streaming failed, falling back to non-streaming:", err);
-    const fallbackRes = await chatWithLlm({ messages, modelConfig });
-    onEvent({ type: "step", data: { type: "generating", title: "Generating response", description: "Processing..." } });
-    onEvent({ type: "complete", data: { answer: fallbackRes.answer } });
-    return;
-  }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`API ${res.status}: ${text || res.statusText}`);
-  }
-
-  if (!res.body) {
-    // Fallback if browser doesn't support streaming
-    console.warn("Browser doesn't support streaming, falling back");
-    const fallbackRes = await chatWithLlm({ messages, modelConfig });
-    onEvent({ type: "step", data: { type: "generating", title: "Generating response", description: "Processing..." } });
-    onEvent({ type: "complete", data: { answer: fallbackRes.answer } });
-    return;
-  }
-
-  await parseSSE(res.body, onEvent);
+  await requestStream(
+    "/api/chat/stream", requestBody,
+    () => chatWithLlm({ messages, modelConfig }), onEvent,
+  );
 }

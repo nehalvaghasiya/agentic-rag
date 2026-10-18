@@ -4,6 +4,18 @@ export const modelConfigFixture = {
   has_api_key: false,
 };
 
+export const correlationIdFixture = "05ede9f0-4165-486c-a8d5-f1cd726b14c6";
+
+export function errorFixture(overrides = {}) {
+  return { error: {
+    code: "PROVIDER_UNAVAILABLE",
+    message: "The model provider is temporarily unavailable. Try again later.",
+    retryable: true,
+    correlation_id: correlationIdFixture,
+    ...overrides,
+  } };
+}
+
 export const knowledgeBaseFixture = {
   id: "kb_fixture",
   name: "Fixture Knowledge Base",

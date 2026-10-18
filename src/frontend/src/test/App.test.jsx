@@ -2,7 +2,10 @@ import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { KnowledgeBaseDashboard } from "../views/KnowledgeBaseDashboard";
-import { capturedRequests, createChatStreamErrorHandler } from "./handlers";
+import { CreateKnowledgeBaseModal } from "../components/features/knowledge-base/CreateKnowledgeBaseModal";
+import { ApiError } from "../api/client";
+import { capturedRequests, createChatStreamErrorHandler, createChatStreamHandler } from "./handlers";
+import { correlationIdFixture, errorFixture } from "./fixtures";
 import { renderApp, renderWithAppProviders } from "./render";
 import { server } from "./server";
 
@@ -60,12 +63,47 @@ describe("frontend component harness", () => {
 
     expect(
       await screen.findByText(
-        "Query failed: API 503: Fixture provider unavailable"
+        "The model provider is temporarily unavailable. Try again later."
       )
     ).toBeInTheDocument();
     expect(input).toBeEnabled();
 
     await user.type(input, "Retry");
     expect(input).toHaveValue("Retry");
+  });
+
+  it("replaces partial output with a terminal SSE error and clears loading", async () => {
+    server.use(createChatStreamHandler({ events: [
+      { type: "token", data: { token: "partial answer" } },
+      { type: "error", data: errorFixture({ retryable: false }) },
+      { type: "complete", data: { answer: "late answer" } },
+    ] }));
+    const { user } = renderApp();
+    const input = await screen.findByPlaceholderText("Ask a question…");
+    await user.type(input, "Trigger SSE failure");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByText(`Reference: ${correlationIdFixture}`)).toBeInTheDocument();
+    expect(screen.queryByText("partial answer")).not.toBeInTheDocument();
+    expect(screen.queryByText("late answer")).not.toBeInTheDocument();
+    expect(screen.queryByText("You can try again later.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Generating response...")).not.toBeInTheDocument();
+    expect(input).toBeEnabled();
+    expect(capturedRequests.chat).toHaveLength(1);
+  });
+
+  it("shows validation details and the reference when KB creation fails", async () => {
+    const onCreate = vi.fn().mockRejectedValue(new ApiError({
+      code: "VALIDATION_ERROR", message: "Some request fields are invalid. Check the field details.",
+      correlationId: correlationIdFixture,
+      details: [{ field: "files", code: "invalid_value", message: "This field has an invalid value." }],
+    }));
+    const { user, container } = renderWithAppProviders(
+      <CreateKnowledgeBaseModal open onCreate={onCreate} onClose={() => {}} />
+    );
+    await user.type(screen.getByPlaceholderText("e.g., Nvidia Q2 results"), "Test KB");
+    await user.upload(container.querySelector('input[type="file"]'), new File(["data"], "notes.txt", { type: "text/plain" }));
+    await user.click(screen.getByRole("button", { name: "Create", exact: true }));
+    expect(await screen.findByText(/files: This field has an invalid value\./)).toHaveTextContent(`Reference: ${correlationIdFixture}`);
+    expect(screen.getByRole("button", { name: "Create", exact: true })).toBeEnabled();
   });
 });

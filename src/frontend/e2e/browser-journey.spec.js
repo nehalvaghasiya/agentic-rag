@@ -76,3 +76,45 @@ test("creates a knowledge base and queries it across routes", async ({
   await expect(page.getByText("Generating response...", { exact: true })).toHaveCount(0);
 });
 
+test("shows a safe terminal stream failure and allows another message", async ({ app, page }) => {
+  const correlationId = "05ede9f0-4165-486c-a8d5-f1cd726b14c6";
+  let requests = 0;
+  // Fulfill one response in-browser; keep application fixture/provider code free
+  // of test-only public fault switches.
+  await page.route(app.apiUrl + "/api/chat/stream", async (route) => {
+    requests += 1;
+    if (requests > 1) return route.continue();
+    const payload = { error: {
+      code: "PROVIDER_UNAVAILABLE",
+      message: "The model provider is temporarily unavailable. Try again later.",
+      retryable: true,
+      correlation_id: correlationId,
+    } };
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream",
+        "X-Correlation-ID": correlationId,
+        "Access-Control-Allow-Origin": app.frontendUrl,
+        "Access-Control-Expose-Headers": "X-Correlation-ID",
+      },
+      body: 'event: token\ndata: {"token":"partial answer"}\n\n' +
+        `event: error\ndata: ${JSON.stringify(payload)}\n\n`,
+    });
+  });
+  await page.goto("/");
+  const composer = page.getByPlaceholder("Ask a question…");
+  await composer.fill("Trigger a controlled stream failure");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByText("The model provider is temporarily unavailable. Try again later.", { exact: true })).toBeVisible();
+  await expect(page.getByText(`Reference: ${correlationId}`, { exact: true })).toBeVisible();
+  await expect(page.getByText("partial answer", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Generating response...", { exact: true })).toHaveCount(0);
+  expect(requests).toBe(1);
+  await expect(composer).toBeEnabled();
+  await composer.fill("Try a new question");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByText(SCRIPTED_ANSWER, { exact: true })).toBeVisible();
+  expect(requests).toBe(2);
+});
+

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from backend.config import Settings
+from backend.errors import ApplicationError
 from backend.indexing.embedder import HashEmbedder
 from backend.llm import get_embedder, get_llm
 
@@ -58,7 +59,7 @@ def test_openai_embedder_requires_a_key_before_construction(
 ) -> None:
     settings = settings_factory(mode="production", openai_api_key=None)
 
-    with pytest.raises(ValueError, match="OpenAI API key required"):
+    with pytest.raises(ApplicationError, match="MODEL_NOT_CONFIGURED"):
         get_embedder("text-embedding-3-small", settings)
 
 

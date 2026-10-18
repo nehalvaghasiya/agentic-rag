@@ -2,9 +2,11 @@
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, Request
 
 from backend.config import Settings
+from backend.errors import ApplicationError
+from backend.models import ErrorCode
 from backend.services import AppServices
 from backend.storage import KBStore
 
@@ -13,7 +15,7 @@ async def get_services(request: Request) -> AppServices:
     """Return initialized services without constructing resources on demand."""
     services: AppServices | None = getattr(request.app.state, "services", None)
     if services is None:
-        raise HTTPException(status_code=503, detail="Application services are unavailable")
+        raise ApplicationError(ErrorCode.SERVICE_UNAVAILABLE)
     return services
 
 

@@ -11,6 +11,7 @@ from langchain_core.documents import Document
 
 import backend.storage.kb as kb_module
 from backend.config import Settings
+from backend.errors import ApplicationError
 from backend.storage import KBStore, VectorStore
 from tests.support import ScriptedEmbedder
 
@@ -148,7 +149,7 @@ async def test_kb_create_rejects_upload_without_filename(
     settings: Settings,
     upload_file_factory,
 ) -> None:
-    with pytest.raises(ValueError, match="must have a filename"):
+    with pytest.raises(ApplicationError, match="VALIDATION_ERROR"):
         await kb_store.create(
             "Invalid",
             "offline-embedding",

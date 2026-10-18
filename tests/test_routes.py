@@ -104,7 +104,7 @@ async def test_missing_kb_returns_404(app_client: httpx.AsyncClient, suffix: str
     )
 
     assert response.status_code == 404
-    assert response.json() == {"detail": "Knowledge base not found"}
+    assert response.json()["error"]["code"] == "NOT_FOUND"
 
 
 @pytest.mark.asyncio
@@ -116,10 +116,9 @@ async def test_chat_without_llm_returns_documented_response(
         json={"messages": [{"role": "user", "content": "hello"}]},
     )
 
-    assert response.status_code == 200
-    assert response.json() == {
-        "answer": "LLM not configured. Set OPENAI_API_KEY or use a model override."
-    }
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "MODEL_NOT_CONFIGURED"
+    assert response.json()["error"]["retryable"] is False
 
 
 @pytest.mark.asyncio
