@@ -39,7 +39,7 @@ from backend.errors import (
 )
 from backend.models import ChatResponse, ChatStreamRequest, ErrorCode
 from tests.support import ScriptedLLM
-from tests.test_querying import collect_events, manifest, no_sleep
+from tests.test_querying import collect_events, decode_sse, manifest, no_sleep
 from tests.test_routes import create_kb
 
 PRIVATE = "private-diagnostic-sentinel"
@@ -279,7 +279,10 @@ async def test_generation_failure_never_becomes_answer(app_client, monkeypatch, 
         assert "partial" in response.text
         assert "event: complete" not in response.text
         assert response.text.count("event: error") == 1
-        assert '"code": "QUOTA_EXCEEDED"' in response.text
+        assert (
+            decode_sse(response.text.strip().split("\n\n")[-1])[1]["error"]["code"]
+            == "QUOTA_EXCEEDED"
+        )
     else:
         assert_http(response, ErrorCode.QUOTA_EXCEEDED, 429)
     assert "Error generating answer" not in response.text
