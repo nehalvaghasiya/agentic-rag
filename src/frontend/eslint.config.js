@@ -32,7 +32,7 @@ const reactRules = {
 }
 
 export default defineConfig([
-  globalIgnores(['dist', 'playwright-report', 'test-results', 'blob-report']),
+  globalIgnores(['dist', 'playwright-report', 'test-results', 'blob-report', 'src/api/generated']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [js.configs.recommended],
@@ -57,7 +57,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['e2e/**/*.js'],
+    files: ['e2e/**/*.js', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: globals.node,
     },
