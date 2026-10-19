@@ -1,0 +1,2747 @@
+{
+  "components": {
+    "schemas": {
+      "Body_create_knowledge_base_api_kb_post": {
+        "properties": {
+          "embedding_model": {
+            "title": "Embedding Model",
+            "type": "string"
+          },
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "embedding_model",
+          "files"
+        ],
+        "title": "Body_create_knowledge_base_api_kb_post",
+        "type": "object"
+      },
+      "ChatMessage": {
+        "description": "A single chat message.",
+        "properties": {
+          "content": {
+            "description": "Message content",
+            "title": "Content",
+            "type": "string"
+          },
+          "role": {
+            "description": "Message role: user, assistant, or system",
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ChatMessage",
+        "type": "object"
+      },
+      "ChatResponse": {
+        "description": "Non-streaming chat response.",
+        "properties": {
+          "answer": {
+            "description": "Final assistant answer",
+            "title": "Answer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "answer"
+        ],
+        "title": "ChatResponse",
+        "type": "object"
+      },
+      "ChatStreamRequest": {
+        "description": "Request for streaming chat.",
+        "properties": {
+          "messages": {
+            "description": "Chat history",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "model_config_override": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional model config override"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "title": "ChatStreamRequest",
+        "type": "object"
+      },
+      "CompleteEvent": {
+        "description": "Completion event with final answer.",
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "answer"
+        ],
+        "title": "CompleteEvent",
+        "type": "object"
+      },
+      "CompleteFrame": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CompleteEvent"
+          },
+          "type": {
+            "const": "complete",
+            "default": "complete",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "CompleteFrame",
+        "type": "object"
+      },
+      "DocumentMeta": {
+        "description": "Metadata for an uploaded document.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "title": "Uploaded At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "size",
+          "uploaded_at"
+        ],
+        "title": "DocumentMeta",
+        "type": "object"
+      },
+      "ErrorCode": {
+        "description": "Stable public failure categories shared by HTTP and execution events.",
+        "enum": [
+          "BAD_REQUEST",
+          "NOT_FOUND",
+          "METHOD_NOT_ALLOWED",
+          "CONFLICT",
+          "VALIDATION_ERROR",
+          "RATE_LIMITED",
+          "QUOTA_EXCEEDED",
+          "MODEL_NOT_CONFIGURED",
+          "SERVICE_UNAVAILABLE",
+          "PROVIDER_AUTH_ERROR",
+          "PROVIDER_REQUEST_ERROR",
+          "PROVIDER_UNAVAILABLE",
+          "PROVIDER_TIMEOUT",
+          "PROVIDER_ERROR",
+          "INTERNAL_ERROR",
+          "HTTP_ERROR"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "ErrorEnvelope": {
+        "additionalProperties": false,
+        "description": "Canonical HTTP error body and terminal SSE error data.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/PublicError"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorEnvelope",
+        "type": "object"
+      },
+      "ErrorEvent": {
+        "additionalProperties": false,
+        "description": "Terminal execution failure; serialized identically to HTTP errors.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/PublicError"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorEvent",
+        "type": "object"
+      },
+      "ErrorFrame": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ErrorEvent"
+          },
+          "type": {
+            "const": "error",
+            "default": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "ErrorFrame",
+        "type": "object"
+      },
+      "ExecutionEvent": {
+        "discriminator": {
+          "mapping": {
+            "complete": "#/components/schemas/CompleteFrame",
+            "error": "#/components/schemas/ErrorFrame",
+            "sources": "#/components/schemas/SourcesFrame",
+            "step": "#/components/schemas/StepFrame",
+            "token": "#/components/schemas/TokenFrame"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/StepFrame"
+          },
+          {
+            "$ref": "#/components/schemas/TokenFrame"
+          },
+          {
+            "$ref": "#/components/schemas/SourcesFrame"
+          },
+          {
+            "$ref": "#/components/schemas/CompleteFrame"
+          },
+          {
+            "$ref": "#/components/schemas/ErrorFrame"
+          }
+        ]
+      },
+      "HealthResponse": {
+        "description": "Health check response.",
+        "properties": {
+          "status": {
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "KnowledgeBase": {
+        "description": "Knowledge base summary for API responses.",
+        "properties": {
+          "chunking_strategy": {
+            "default": "Recursive (800/120)",
+            "title": "Chunking Strategy",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentMeta"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "embedding_model": {
+            "title": "Embedding Model",
+            "type": "string"
+          },
+          "file_count": {
+            "title": "File Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_modified": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ranking_strategy": {
+            "default": "Hybrid",
+            "title": "Ranking Strategy",
+            "type": "string"
+          },
+          "total_size": {
+            "title": "Total Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "embedding_model",
+          "created_at",
+          "file_count",
+          "total_size",
+          "documents",
+          "chunking_strategy",
+          "ranking_strategy",
+          "last_modified"
+        ],
+        "title": "KnowledgeBase",
+        "type": "object"
+      },
+      "ModelConfig": {
+        "description": "LLM model configuration for API requests.",
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "API key (overrides env)",
+            "title": "Api Key"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "API base URL (overrides env)",
+            "title": "Base Url"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Model name (overrides env)",
+            "title": "Model"
+          }
+        },
+        "title": "ModelConfig",
+        "type": "object"
+      },
+      "ModelConfigResponse": {
+        "description": "Response with current model configuration (without exposing secrets).",
+        "properties": {
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current base URL",
+            "title": "Base Url"
+          },
+          "has_api_key": {
+            "description": "Whether API key is configured",
+            "title": "Has Api Key",
+            "type": "boolean"
+          },
+          "model": {
+            "description": "Current model name",
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "base_url",
+          "has_api_key"
+        ],
+        "title": "ModelConfigResponse",
+        "type": "object"
+      },
+      "PublicError": {
+        "additionalProperties": false,
+        "description": "Safe failure information. Retryability is advisory, not replay permission.",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "correlation_id": {
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "title": "Correlation Id",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ValidationIssue"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "message": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "correlation_id"
+        ],
+        "title": "PublicError",
+        "type": "object"
+      },
+      "QueryRequest": {
+        "description": "Request to query a knowledge base.",
+        "properties": {
+          "model_config_override": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional model config override"
+          },
+          "question": {
+            "description": "Question to ask",
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "QueryRequest",
+        "type": "object"
+      },
+      "QueryResponse": {
+        "description": "Non-streaming query response for a knowledge base.",
+        "properties": {
+          "answer": {
+            "description": "Final answer",
+            "title": "Answer",
+            "type": "string"
+          },
+          "sources": {
+            "description": "Retrieved sources",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "answer",
+          "sources"
+        ],
+        "title": "QueryResponse",
+        "type": "object"
+      },
+      "Source": {
+        "description": "A source citation from retrieved documents.",
+        "properties": {
+          "chunk": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Chunk index",
+            "title": "Chunk"
+          },
+          "file_name": {
+            "description": "Source file name",
+            "title": "File Name",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "description": "Additional metadata",
+            "title": "Metadata",
+            "type": "object"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Page number (1-indexed, for PDFs)",
+            "title": "Page"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Similarity score (0-100%)",
+            "title": "Score"
+          },
+          "snippet": {
+            "description": "Text snippet from the source",
+            "title": "Snippet",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_name",
+          "page",
+          "chunk",
+          "snippet",
+          "score",
+          "metadata"
+        ],
+        "title": "Source",
+        "type": "object"
+      },
+      "SourcesEvent": {
+        "description": "Sources citation event.",
+        "properties": {
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sources"
+        ],
+        "title": "SourcesEvent",
+        "type": "object"
+      },
+      "SourcesFrame": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SourcesEvent"
+          },
+          "type": {
+            "const": "sources",
+            "default": "sources",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "SourcesFrame",
+        "type": "object"
+      },
+      "StepEvent": {
+        "description": "A reasoning step event.",
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "analyzing",
+              "rewriting",
+              "searching",
+              "grading",
+              "generating"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "description",
+          "details"
+        ],
+        "title": "StepEvent",
+        "type": "object"
+      },
+      "StepFrame": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StepEvent"
+          },
+          "type": {
+            "const": "step",
+            "default": "step",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "StepFrame",
+        "type": "object"
+      },
+      "TokenEvent": {
+        "description": "A token streaming event.",
+        "properties": {
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "TokenEvent",
+        "type": "object"
+      },
+      "TokenFrame": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TokenEvent"
+          },
+          "type": {
+            "const": "token",
+            "default": "token",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "TokenFrame",
+        "type": "object"
+      },
+      "ValidationIssue": {
+        "additionalProperties": false,
+        "description": "A declared field path and controlled validation explanation; never input.",
+        "properties": {
+          "code": {
+            "enum": [
+              "required",
+              "invalid_type",
+              "invalid_json",
+              "invalid_value"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "field": {
+            "maxLength": 256,
+            "title": "Field",
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "code",
+          "message"
+        ],
+        "title": "ValidationIssue",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "RAG-based question answering with streaming support. Failures use ErrorEnvelope with a stable code, safe message, advisory retryability and correlation_id. X-Correlation-ID identifies every application response. SSE execution failures use the same envelope in one terminal error event; HTTP 200 only opens the stream.",
+    "title": "Agentic RAG API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Root endpoint.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Root  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Root"
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "description": "General chat (non-streaming).\n\nThis endpoint exists as a fallback for environments that don't support SSE\nstreaming.",
+        "operationId": "chat_api_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatStreamRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Chat"
+      }
+    },
+    "/api/chat/stream": {
+      "post": {
+        "description": "Direct chat without knowledge base (streaming).\n\nReturns Server-Sent Events (SSE) with:\n- step: Reasoning step updates\n- token: Streaming answer tokens\n- complete: Final complete event\n- error: Terminal ErrorEnvelope with the response's X-Correlation-ID\n\nAccepts optional model_config_override to use custom LLM settings.",
+        "operationId": "chat_stream_api_chat_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatStreamRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "SSE connection opened. A terminal complete event indicates success; a terminal error event carries ErrorEnvelope. No complete event follows an error."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Chat Stream",
+        "x-event-schema": {
+          "$ref": "#/components/schemas/ExecutionEvent"
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "description": "Health check endpoint.",
+        "operationId": "health_check_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Health Check"
+      }
+    },
+    "/api/kb": {
+      "get": {
+        "description": "List all knowledge bases.",
+        "operationId": "list_knowledge_bases_api_kb_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeBase"
+                  },
+                  "title": "Response List Knowledge Bases Api Kb Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Knowledge Bases"
+      },
+      "post": {
+        "description": "Create a new knowledge base with uploaded files.\n\nThis endpoint accepts multipart form data with:\n- name: Knowledge base name\n- embedding_model: Model to use for embeddings\n- files: One or more files to index",
+        "operationId": "create_knowledge_base_api_kb_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_knowledge_base_api_kb_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBase"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create Knowledge Base"
+      }
+    },
+    "/api/kb/{kb_id}": {
+      "get": {
+        "description": "Get details for a specific knowledge base.",
+        "operationId": "get_knowledge_base_api_kb__kb_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBase"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Knowledge Base"
+      }
+    },
+    "/api/kb/{kb_id}/query": {
+      "post": {
+        "description": "Query a knowledge base (non-streaming).\n\nThis endpoint exists as a fallback for environments that don't support SSE\nstreaming (for example, embedded webviews).",
+        "operationId": "query_knowledge_base_api_kb__kb_id__query_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Query Knowledge Base"
+      }
+    },
+    "/api/kb/{kb_id}/query/stream": {
+      "post": {
+        "description": "Query a knowledge base with streaming response.\n\nReturns Server-Sent Events (SSE) with:\n- step: Reasoning step updates\n- sources: Retrieved source documents\n- token: Streaming answer tokens\n- complete: Final complete event\n- error: Terminal ErrorEnvelope with the response's X-Correlation-ID\n\nAccepts optional model_config_override to use custom LLM settings.",
+        "operationId": "query_knowledge_base_stream_api_kb__kb_id__query_stream_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "SSE connection opened. A terminal complete event indicates success; a terminal error event carries ErrorEnvelope. No complete event follows an error."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Query Knowledge Base Stream",
+        "x-event-schema": {
+          "$ref": "#/components/schemas/ExecutionEvent"
+        }
+      }
+    },
+    "/api/models/config": {
+      "get": {
+        "description": "Get current model configuration (without exposing API key).",
+        "operationId": "get_model_config_api_models_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelConfigResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Model Config"
+      }
+    }
+  }
+}
