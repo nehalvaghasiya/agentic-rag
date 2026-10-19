@@ -1,0 +1,569 @@
+[
+  {
+    "name": "knowledge base with naive dates and zeros",
+    "schema": "#/components/schemas/KnowledgeBase",
+    "payload": {
+      "id": "kb_fixture",
+      "name": "Contract KB",
+      "embedding_model": "offline",
+      "created_at": "2026-01-02T03:04:05",
+      "last_modified": null,
+      "file_count": 0,
+      "total_size": 0,
+      "ranking_strategy": "Hybrid",
+      "chunking_strategy": "Recursive (800/120)",
+      "documents": [
+        {
+          "id": "doc",
+          "name": "notes.txt",
+          "type": "txt",
+          "size": 0,
+          "uploaded_at": "2026-01-02T03:04:05"
+        }
+      ]
+    },
+    "valid": true
+  },
+  {
+    "name": "source with nullable fields and JSON metadata",
+    "schema": "#/components/schemas/Source",
+    "payload": {
+      "file_name": "notes.txt",
+      "page": null,
+      "chunk": 0,
+      "snippet": "evidence",
+      "score": 0,
+      "metadata": {
+        "nested": {
+          "values": [
+            1,
+            true,
+            null
+          ]
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "error without optional details",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "PROVIDER_UNAVAILABLE",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6"
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "error with nullable details",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "PROVIDER_UNAVAILABLE",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6",
+        "details": null
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "validation details",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6",
+        "details": [
+          {
+            "field": "messages[0].content",
+            "code": "required",
+            "message": "This field is required."
+          }
+        ]
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "event step",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "step",
+      "data": {
+        "type": "generating",
+        "title": "Generating",
+        "description": "",
+        "details": {}
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "event token",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "token",
+      "data": {
+        "token": "answer"
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "event sources",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "sources",
+      "data": {
+        "sources": [
+          {
+            "file_name": "notes.txt",
+            "page": null,
+            "chunk": 0,
+            "snippet": "evidence",
+            "score": 0,
+            "metadata": {
+              "nested": {
+                "values": [
+                  1,
+                  true,
+                  null
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "event complete",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "complete",
+      "data": {
+        "answer": ""
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "event error",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "error",
+      "data": {
+        "error": {
+          "code": "PROVIDER_UNAVAILABLE",
+          "message": "The model provider is temporarily unavailable.",
+          "retryable": true,
+          "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6"
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "unknown event",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "progress",
+      "data": {}
+    },
+    "valid": false
+  },
+  {
+    "name": "missing token",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "token",
+      "data": {}
+    },
+    "valid": false
+  },
+  {
+    "name": "numeric token",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "token",
+      "data": {
+        "token": 42
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "mismatched event payload",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "complete",
+      "data": {
+        "token": "answer"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "unknown step kind",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "step",
+      "data": {
+        "type": "unknown",
+        "title": "x",
+        "description": "",
+        "details": {}
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "missing step title",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "step",
+      "data": {
+        "type": "generating",
+        "description": "",
+        "details": {}
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "malformed nested source",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "sources",
+      "data": {
+        "sources": [
+          {
+            "file_name": "notes.txt",
+            "page": "1",
+            "chunk": 0,
+            "snippet": "evidence",
+            "score": 0,
+            "metadata": {
+              "nested": {
+                "values": [
+                  1,
+                  true,
+                  null
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "null event data",
+    "schema": "#/components/schemas/ExecutionEvent",
+    "payload": {
+      "type": "complete",
+      "data": null
+    },
+    "valid": false
+  },
+  {
+    "name": "unknown error code",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "UNKNOWN_CODE",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "invalid correlation id",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "PROVIDER_UNAVAILABLE",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": true,
+        "correlation_id": "bad-id"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "empty error message",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "PROVIDER_UNAVAILABLE",
+        "message": "",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "oversized error message",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "PROVIDER_UNAVAILABLE",
+        "message": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "wrong retryable type",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "PROVIDER_UNAVAILABLE",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": "true",
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "too many validation details",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6",
+        "details": [
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          },
+          {
+            "field": "messages",
+            "code": "required",
+            "message": "Required."
+          }
+        ]
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "invalid detail code",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6",
+        "details": [
+          {
+            "field": "messages",
+            "code": "arbitrary",
+            "message": "Invalid."
+          }
+        ]
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "forbidden error extra field",
+    "schema": "#/components/schemas/ErrorEnvelope",
+    "payload": {
+      "error": {
+        "code": "PROVIDER_UNAVAILABLE",
+        "message": "The model provider is temporarily unavailable.",
+        "retryable": true,
+        "correlation_id": "05ede9f0-4165-486c-a8d5-f1cd726b14c6"
+      },
+      "private": "sentinel"
+    },
+    "valid": false
+  },
+  {
+    "name": "missing snake case field",
+    "schema": "#/components/schemas/KnowledgeBase",
+    "payload": {
+      "id": "kb_fixture",
+      "name": "Contract KB",
+      "created_at": "2026-01-02T03:04:05",
+      "last_modified": null,
+      "file_count": 0,
+      "total_size": 0,
+      "ranking_strategy": "Hybrid",
+      "chunking_strategy": "Recursive (800/120)",
+      "documents": [
+        {
+          "id": "doc",
+          "name": "notes.txt",
+          "type": "txt",
+          "size": 0,
+          "uploaded_at": "2026-01-02T03:04:05"
+        }
+      ],
+      "embeddingModel": "offline"
+    },
+    "valid": false
+  },
+  {
+    "name": "wrong count type",
+    "schema": "#/components/schemas/KnowledgeBase",
+    "payload": {
+      "id": "kb_fixture",
+      "name": "Contract KB",
+      "embedding_model": "offline",
+      "created_at": "2026-01-02T03:04:05",
+      "last_modified": null,
+      "file_count": "0",
+      "total_size": 0,
+      "ranking_strategy": "Hybrid",
+      "chunking_strategy": "Recursive (800/120)",
+      "documents": [
+        {
+          "id": "doc",
+          "name": "notes.txt",
+          "type": "txt",
+          "size": 0,
+          "uploaded_at": "2026-01-02T03:04:05"
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "missing required document field",
+    "schema": "#/components/schemas/KnowledgeBase",
+    "payload": {
+      "id": "kb_fixture",
+      "name": "Contract KB",
+      "embedding_model": "offline",
+      "created_at": "2026-01-02T03:04:05",
+      "last_modified": null,
+      "file_count": 0,
+      "total_size": 0,
+      "ranking_strategy": "Hybrid",
+      "chunking_strategy": "Recursive (800/120)",
+      "documents": [
+        {
+          "id": "doc"
+        }
+      ]
+    },
+    "valid": false
+  }
+]
