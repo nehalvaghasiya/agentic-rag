@@ -357,3 +357,9 @@ See [CI configuration, failure validation, and merge-protection rollout](.github
 ## License
 
 MIT
+
+## API contract generation
+
+API models, SSE events, and frontend boundary types share a versioned generated
+contract. See [the contract workflow](contracts/README.md) for regeneration commands,
+validation behavior, and CI requirements.
