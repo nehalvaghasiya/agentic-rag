@@ -1,4 +1,5 @@
 import {
+  type ReactNode,
   createContext,
   useCallback,
   useContext,
@@ -16,24 +17,45 @@ import {
   chatWithLlmStream,
   queryKnowledgeBaseStream,
 } from "../api/client";
+import { normalizeKb, normalizeSource, normalizeModelConfig, type KnowledgeBase, type Source, type ModelSettings } from "../api/adapters";
+import { assertNever, type Dto } from "../api/contracts";
+import type { CreateKnowledgeBaseParams } from "../api/client";
 import { createId } from "../utils/id";
 
-const AppStateContext = createContext(null);
+type ModelEntry = ModelSettings & { id: string; name: string; isDefault: boolean; hasApiKey: boolean };
+type Message = {
+  id: string; role: string; content: string; sources: Source[];
+  isStreaming?: boolean; reasoningSteps?: Dto<"StepEvent">[];
+  error?: Pick<ApiError, "code" | "message" | "retryable" | "correlationId" | "details" | "httpStatus"> | null;
+};
+type Chat = { id: string; kbId: string | null; title: string; updatedAt: string; messages: Message[] };
+const AppStateContext = createContext<ReturnType<typeof useAppStateValue> | null>(null);
 
 // LocalStorage key for persisting model configs
 const MODEL_CONFIGS_KEY = "agentic-rag-model-configs";
 const SELECTED_MODEL_KEY = "agentic-rag-selected-model";
 
-function loadStoredModelConfigs() {
+function loadStoredModelConfigs(): ModelEntry[] {
   try {
     const stored = localStorage.getItem(MODEL_CONFIGS_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const entries: unknown = stored ? JSON.parse(stored) : [];
+    if (!Array.isArray(entries)) return [];
+    return entries.filter((entry: unknown): entry is ModelEntry => {
+      if (!entry || typeof entry !== "object") return false;
+      return "id" in entry && typeof entry.id === "string" &&
+        "name" in entry && typeof entry.name === "string" &&
+        "isDefault" in entry && typeof entry.isDefault === "boolean" &&
+        "hasApiKey" in entry && typeof entry.hasApiKey === "boolean" &&
+        (!("model" in entry) || typeof entry.model === "string") &&
+        (!("apiKey" in entry) || typeof entry.apiKey === "string") &&
+        (!("baseUrl" in entry) || entry.baseUrl === null || typeof entry.baseUrl === "string");
+    });
   } catch {
     return [];
   }
 }
 
-function saveModelConfigs(configs) {
+function saveModelConfigs(configs: ModelEntry[]) {
   try {
     // Don't save the default model or API keys
     const toSave = configs
@@ -53,7 +75,7 @@ function loadSelectedModelId() {
   }
 }
 
-function saveSelectedModelId(id) {
+function saveSelectedModelId(id: string) {
   try {
     localStorage.setItem(SELECTED_MODEL_KEY, id);
   } catch {
@@ -61,7 +83,7 @@ function saveSelectedModelId(id) {
   }
 }
 
-function computeKbStats(knowledgeBase) {
+function computeKbStats(knowledgeBase: KnowledgeBase) {
   const fileCount = knowledgeBase.documents.length;
   const totalSize = knowledgeBase.documents.reduce((sum, doc) => sum + doc.size, 0);
 
@@ -75,52 +97,12 @@ function computeKbStats(knowledgeBase) {
   };
 }
 
-function normalizeKb(kb) {
-  // Map backend snake_case to frontend camelCase
-  const documents = Array.isArray(kb.documents)
-    ? kb.documents.map((d) => ({
-        id: d.id,
-        name: d.name,
-        type: d.type,
-        size: d.size,
-        status: "Indexed",
-        uploadedAt: String(d.uploaded_at || d.uploadedAt || new Date().toISOString()),
-      }))
-    : [];
+function useAppStateValue() {
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
+  const [chatHistory, setChatHistory] = useState<Chat[]>([]);
 
-  return {
-    id: kb.id,
-    name: kb.name,
-    embeddingModel: kb.embedding_model || kb.embeddingModel || "text-embedding-3-large",
-    rankingStrategy: kb.ranking_strategy || kb.rankingStrategy || "Hybrid",
-    chunkingStrategy: kb.chunking_strategy || kb.chunkingStrategy || "Recursive (800/120)",
-    createdAt: String(kb.created_at || kb.createdAt || new Date().toISOString()),
-    lastModified: String(kb.last_modified || kb.lastModified || kb.created_at || new Date().toISOString()),
-    fileCount: kb.file_count || kb.fileCount || documents.length,
-    totalSize: kb.total_size || kb.totalSize || 0,
-    documents,
-  };
-}
-
-function normalizeSource(src) {
-  // Map backend snake_case to frontend camelCase
-  return {
-    fileName: src.file_name || src.fileName || "Unknown",
-    pageNumber: src.page ?? src.pageNumber ?? null,
-    chunkIndex: src.chunk ?? src.chunkIndex ?? null,
-    snippetText: src.snippet || src.snippetText || "",
-    highlight: src.highlight || null,
-    score: src.score ?? null,
-    metadata: src.metadata || {},
-  };
-}
-
-export function AppStateProvider({ children }) {
-  const [knowledgeBases, setKnowledgeBases] = useState([]);
-  const [chatHistory, setChatHistory] = useState([]);
-  
   // Model configuration state
-  const [modelConfigs, setModelConfigs] = useState(() => {
+  const [modelConfigs, setModelConfigs] = useState<ModelEntry[]>(() => {
     const stored = loadStoredModelConfigs();
     // Always include a default model entry
     return [
@@ -149,7 +131,7 @@ export function AppStateProvider({ children }) {
         setModelConfigs((prev) =>
           prev.map((m) =>
             m.isDefault
-              ? { ...m, model: config.model, baseUrl: config.base_url, hasApiKey: config.has_api_key }
+              ? { ...m, ...normalizeModelConfig(config) }
               : m
           )
         );
@@ -173,12 +155,10 @@ export function AppStateProvider({ children }) {
     };
   }, []);
 
-  const createKnowledgeBase = useCallback(async (payload) => {
+  const createKnowledgeBase = useCallback(async (payload: CreateKnowledgeBaseParams) => {
     const created = await apiCreateKnowledgeBase({
       name: payload.name,
-      rankingStrategy: payload.rankingStrategy ?? "Hybrid",
       embeddingModel: payload.embeddingModel ?? "text-embedding-3-large",
-      chunkingStrategy: payload.chunkingStrategy ?? "Recursive (800/120)",
       files: payload.files ?? [],
     });
     const kb = normalizeKb(created);
@@ -186,12 +166,12 @@ export function AppStateProvider({ children }) {
     return kb;
   }, []);
 
-  const deleteKnowledgeBase = useCallback((kbId) => {
+  const deleteKnowledgeBase = useCallback((kbId: string) => {
     setKnowledgeBases((prev) => prev.filter((kb) => kb.id !== kbId));
     setChatHistory((prev) => prev.filter((c) => c.kbId !== kbId));
   }, []);
 
-  const deleteDocument = useCallback((kbId, docId) => {
+  const deleteDocument = useCallback((kbId: string, docId: string) => {
     setKnowledgeBases((prev) =>
       prev.map((kb) => {
         if (kb.id !== kbId) return kb;
@@ -201,13 +181,13 @@ export function AppStateProvider({ children }) {
     );
   }, []);
 
-  const createChat = useCallback(({ kbId }) => {
+  const createChat = useCallback(({ kbId }: { kbId?: string | null }) => {
     const id = createId("chat");
     const now = new Date().toISOString();
 
     const kb = knowledgeBasesRef.current.find((k) => k.id === kbId);
 
-    const chat = {
+    const chat: Chat = {
       id,
       kbId: kbId ?? null,
       title: "New chat",
@@ -228,7 +208,7 @@ export function AppStateProvider({ children }) {
     return chat;
   }, []);
 
-  const setChatKnowledgeBase = useCallback((chatId, kbId) => {
+  const setChatKnowledgeBase = useCallback((chatId: string, kbId: string | null) => {
     setChatHistory((prev) =>
       prev.map((c) => {
         if (c.id !== chatId) return c;
@@ -242,12 +222,12 @@ export function AppStateProvider({ children }) {
   }, []);
 
   // Model configuration actions
-  const selectModel = useCallback((modelId) => {
+  const selectModel = useCallback((modelId: string) => {
     setSelectedModelId(modelId);
     saveSelectedModelId(modelId);
   }, []);
 
-  const addModelConfig = useCallback((config) => {
+  const addModelConfig = useCallback((config: ModelSettings & { name: string }) => {
     const newModel = {
       id: createId("model"),
       name: config.name,
@@ -267,7 +247,7 @@ export function AppStateProvider({ children }) {
     return newModel;
   }, [selectModel]);
 
-  const updateModelConfig = useCallback((modelId, config) => {
+  const updateModelConfig = useCallback((modelId: string, config: ModelSettings & { name?: string }) => {
     setModelConfigs((prev) => {
       const next = prev.map((m) => {
         if (m.id !== modelId) return m;
@@ -285,7 +265,7 @@ export function AppStateProvider({ children }) {
     });
   }, []);
 
-  const deleteModelConfig = useCallback((modelId) => {
+  const deleteModelConfig = useCallback((modelId: string) => {
     setModelConfigs((prev) => {
       const next = prev.filter((m) => m.id !== modelId);
       saveModelConfigs(next);
@@ -310,7 +290,7 @@ export function AppStateProvider({ children }) {
     };
   }, []);
 
-  const sendMessage = useCallback(async (chatId, prompt) => {
+  const sendMessage = useCallback(async (chatId: string, prompt: string) => {
     const trimmed = prompt.trim();
     if (!trimmed) return;
 
@@ -365,7 +345,7 @@ export function AppStateProvider({ children }) {
     );
 
     // Helper to update the streaming message
-    const updateStreamingMessage = (updates) => {
+    const updateStreamingMessage = (updates: Partial<Message>) => {
       setChatHistory((prev) =>
         prev.map((c) => {
           if (c.id !== chatId) return c;
@@ -394,7 +374,7 @@ export function AppStateProvider({ children }) {
           }));
 
         let content = "";
-        let steps = [];
+        let steps: Dto<"StepEvent">[] = [];
 
         await chatWithLlmStream({
           messages: [...history, { role: "user", content: trimmed }],
@@ -409,20 +389,24 @@ export function AppStateProvider({ children }) {
                 content += event.data.token;
                 updateStreamingMessage({ content });
                 break;
+              case "sources":
+                break;
               case "complete":
                 updateStreamingMessage({
-                  content: event.data.answer || content,
+                  content: event.data.answer,
                   isStreaming: false,
                 });
                 break;
+              default:
+                assertNever(event);
             }
           },
         });
       } else {
         // Query with knowledge base
         let content = "";
-        let sources = [];
-        let steps = [];
+        let sources: Source[] = [];
+        let steps: Dto<"StepEvent">[] = [];
 
         await queryKnowledgeBaseStream({
           kbId,
@@ -439,15 +423,17 @@ export function AppStateProvider({ children }) {
                 updateStreamingMessage({ content });
                 break;
               case "sources":
-                sources = (event.data.sources || []).map(normalizeSource);
+                sources = event.data.sources.map(normalizeSource);
                 updateStreamingMessage({ sources });
                 break;
               case "complete":
                 updateStreamingMessage({
-                  content: event.data.answer || content,
+                  content: event.data.answer,
                   isStreaming: false,
                 });
                 break;
+              default:
+                assertNever(event);
             }
           },
         });
@@ -502,6 +488,11 @@ export function AppStateProvider({ children }) {
     deleteModelConfig,
   ]);
 
+  return value;
+}
+
+export function AppStateProvider({ children }: { children: ReactNode }) {
+  const value = useAppStateValue();
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }
 

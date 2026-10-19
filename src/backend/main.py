@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import Settings, resolve_settings
+from backend.contracts import API_VERSION, install_event_schema
 from backend.errors import CATALOG, install_error_handling
 from backend.models import ErrorEnvelope
 from backend.routes import router
@@ -43,7 +44,7 @@ def create_app(
             "X-Correlation-ID identifies every application response. SSE execution failures "
             "use the same envelope in one terminal error event; HTTP 200 only opens the stream."
         ),
-        version="1.0.0",
+        version=API_VERSION,
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
@@ -77,6 +78,7 @@ def create_app(
         """Root endpoint."""
         return {"message": "Agentic RAG API", "docs": "/docs"}
 
+    install_event_schema(app)
     return app
 
 

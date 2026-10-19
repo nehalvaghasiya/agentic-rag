@@ -6,20 +6,33 @@ Handles streaming responses with reasoning steps and token-by-token output.
 from __future__ import annotations
 
 import asyncio
-import json
 import queue
 import threading
 from collections.abc import AsyncGenerator, Callable, Iterator
 from contextlib import aclosing
-from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from starlette.requests import ClientDisconnect
 
 from backend.errors import ApplicationError, correlation_context, report_failure, stage_context
-from backend.models import ErrorCode
+from backend.models import (
+    EXECUTION_EVENT_ADAPTER,
+    CompleteEvent,
+    CompleteFrame,
+    ErrorCode,
+    ErrorEvent,
+    ErrorFrame,
+    ExecutionEvent,
+    SourcesEvent,
+    SourcesFrame,
+    StepEvent,
+    StepFrame,
+    TokenEvent,
+    TokenFrame,
+)
 from backend.querying.nodes import generate_stream, grade, retrieve, rewrite_query
+from backend.sources import build_sources
 
 if TYPE_CHECKING:
     from backend.config import Settings
@@ -27,17 +40,13 @@ if TYPE_CHECKING:
     from backend.storage.vector import VectorStore
 
 
-def _sse(event: str, data: dict) -> str:
-    """Format data as a Server-Sent Event.
-
-    Args:
-        event: Event type name.
-        data: Event data dictionary.
-
-    Returns:
-        SSE formatted string.
-    """
-    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+def _sse(event: ExecutionEvent) -> str:
+    """Validate the serialized envelope, then derive both SSE fields from it."""
+    validated = EXECUTION_EVENT_ADAPTER.validate_json(
+        event.model_dump_json(warnings="error"), strict=True
+    )
+    payload = validated.data.model_dump_json(exclude_none=validated.type == "error")
+    return f"event: {validated.type}\ndata: {payload}\n\n"
 
 
 async def stream_query(
@@ -65,7 +74,7 @@ async def _safe_stream(
             raise
         except Exception as exc:
             failure = report_failure(exc)
-            yield _sse("error", failure.payload())
+            yield _sse(ErrorFrame(data=ErrorEvent(error=failure.envelope.error)))
     finally:
         stage_context.reset(stage_token)
         correlation_context.reset(correlation_token)
@@ -135,23 +144,25 @@ async def _query(
 
     # Step 1: Analyzing
     yield _sse(
-        "step",
-        {
-            "type": "analyzing",
-            "title": "Analyzing question",
-            "description": "Understanding your query...",
-        },
+        StepFrame(
+            data=StepEvent(
+                type="analyzing",
+                title="Analyzing question",
+                description="Understanding your query...",
+            )
+        )
     )
     await asyncio.sleep(0.05)
 
     # Step 2: Rewrite query
     yield _sse(
-        "step",
-        {
-            "type": "rewriting",
-            "title": "Optimizing search",
-            "description": "Creating an optimized search query...",
-        },
+        StepFrame(
+            data=StepEvent(
+                type="rewriting",
+                title="Optimizing search",
+                description="Creating an optimized search query...",
+            )
+        )
     )
 
     stage_context.set("query.rewrite")
@@ -159,13 +170,14 @@ async def _query(
 
     # Step 3: Search
     yield _sse(
-        "step",
-        {
-            "type": "searching",
-            "title": "Searching documents",
-            "description": f"Searching for: {query[:50]}...",
-            "details": {"query": query},
-        },
+        StepFrame(
+            data=StepEvent(
+                type="searching",
+                title="Searching documents",
+                description=f"Searching for: {query[:50]}...",
+                details={"query": query},
+            )
+        )
     )
 
     stage_context.set("query.retrieve")
@@ -173,13 +185,14 @@ async def _query(
 
     # Step 4: Grade
     yield _sse(
-        "step",
-        {
-            "type": "grading",
-            "title": "Evaluating results",
-            "description": f"Checking relevance of {len(docs)} documents...",
-            "details": {"count": len(docs)},
-        },
+        StepFrame(
+            data=StepEvent(
+                type="grading",
+                title="Evaluating results",
+                description=f"Checking relevance of {len(docs)} documents...",
+                details={"count": len(docs)},
+            )
+        )
     )
 
     stage_context.set("query.grade")
@@ -187,48 +200,20 @@ async def _query(
 
     # Emit sources
     stage_context.set("query.sources")
-    sources = []
-    for doc in docs[:5]:
-        source_path = doc.metadata.get("source", "unknown")
-        # Use page_label (1-indexed, human-readable) if available, otherwise fall back to page
-        page_number = doc.metadata.get("page_label")
-        if page_number is not None:
-            # page_label might be a string like "1", convert to int
-            try:
-                page_number = int(page_number)
-            except (ValueError, TypeError):
-                page_number = doc.metadata.get("page")
-        else:
-            # Fall back to 0-indexed page and convert to 1-indexed
-            raw_page = doc.metadata.get("page")
-            page_number = (raw_page + 1) if raw_page is not None else None
-
-        # Get similarity score (0-1 range, convert to percentage)
-        similarity_score = doc.metadata.get("similarity_score")
-        score_percent = round(similarity_score * 100, 1) if similarity_score is not None else None
-
-        sources.append(
-            {
-                "file_name": Path(source_path).name,
-                "page": page_number,
-                "chunk": doc.metadata.get("chunk_index"),
-                "snippet": doc.page_content[:200],
-                "score": score_percent,
-                "metadata": doc.metadata,
-            }
-        )
+    sources = build_sources(docs)
 
     if sources:
-        yield _sse("sources", {"sources": sources})
+        yield _sse(SourcesFrame(data=SourcesEvent(sources=sources)))
 
     # Step 5: Generate with streaming
     yield _sse(
-        "step",
-        {
-            "type": "generating",
-            "title": "Generating answer",
-            "description": f"Synthesizing from {len(docs)} sources...",
-        },
+        StepFrame(
+            data=StepEvent(
+                type="generating",
+                title="Generating answer",
+                description=f"Synthesizing from {len(docs)} sources...",
+            )
+        )
     )
 
     full_answer = ""
@@ -240,7 +225,7 @@ async def _query(
         ) as tokens:
             async for token in tokens:
                 full_answer += token
-                yield _sse("token", {"token": token})
+                yield _sse(TokenFrame(data=TokenEvent(token=token)))
     else:
         # Non-streaming fallback
         from backend.querying.nodes import generate
@@ -248,10 +233,10 @@ async def _query(
         full_answer = await asyncio.to_thread(generate, question, docs, llm)
         # Simulate streaming by chunking
         for i in range(0, len(full_answer), 4):
-            yield _sse("token", {"token": full_answer[i : i + 4]})
+            yield _sse(TokenFrame(data=TokenEvent(token=full_answer[i : i + 4])))
             await asyncio.sleep(0.01)
 
-    yield _sse("complete", {"answer": full_answer})
+    yield _sse(CompleteFrame(data=CompleteEvent(answer=full_answer)))
 
 
 async def stream_chat(
@@ -284,12 +269,11 @@ async def _chat(message: str, settings: Settings) -> AsyncGenerator[str, None]:
         raise ApplicationError(ErrorCode.MODEL_NOT_CONFIGURED)
 
     yield _sse(
-        "step",
-        {
-            "type": "generating",
-            "title": "Thinking",
-            "description": "Processing your message...",
-        },
+        StepFrame(
+            data=StepEvent(
+                type="generating", title="Thinking", description="Processing your message..."
+            )
+        )
     )
 
     # Create simple message list
@@ -309,15 +293,15 @@ async def _chat(message: str, settings: Settings) -> AsyncGenerator[str, None]:
         async with aclosing(_stream_tokens(produce, 30.0)) as tokens:
             async for token in tokens:
                 full_answer += token
-                yield _sse("token", {"token": token})
+                yield _sse(TokenFrame(data=TokenEvent(token=token)))
     else:
         response = await asyncio.to_thread(llm.invoke, lc_messages)
         full_answer = str(getattr(response, "content", response))
         for i in range(0, len(full_answer), 4):
-            yield _sse("token", {"token": full_answer[i : i + 4]})
+            yield _sse(TokenFrame(data=TokenEvent(token=full_answer[i : i + 4])))
             await asyncio.sleep(0.01)
 
-    yield _sse("complete", {"answer": full_answer})
+    yield _sse(CompleteFrame(data=CompleteEvent(answer=full_answer)))
 
 
 __all__ = ["stream_query", "stream_chat"]

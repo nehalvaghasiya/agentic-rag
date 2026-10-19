@@ -5,7 +5,6 @@ All request/response validation uses Pydantic models from backend.models.
 """
 
 import asyncio
-from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, File, Form, UploadFile
@@ -24,9 +23,9 @@ from backend.models import (
     ModelConfigResponse,
     QueryRequest,
     QueryResponse,
-    Source,
 )
 from backend.querying import stream_chat, stream_query
+from backend.sources import build_sources
 
 router = APIRouter()
 SSE_RESPONSES: dict[int | str, dict[str, Any]] = {
@@ -69,46 +68,6 @@ def _apply_model_override(base_settings: Settings, override: ModelConfig | None)
 
     # Create new settings with overrides
     return base_settings.model_copy(update=overrides)
-
-
-def _build_sources(docs: list) -> list[Source]:
-    """Convert retrieved documents into API source objects.
-
-    Args:
-        docs: LangChain Document-like objects.
-
-    Returns:
-        List of Source objects.
-    """
-    sources: list[Source] = []
-    for doc in docs[:5]:
-        source_path = doc.metadata.get("source", "unknown")
-
-        page_number = doc.metadata.get("page_label")
-        if page_number is not None:
-            try:
-                page_number = int(page_number)
-            except (ValueError, TypeError):
-                page_number = doc.metadata.get("page")
-        else:
-            raw_page = doc.metadata.get("page")
-            page_number = (raw_page + 1) if raw_page is not None else None
-
-        similarity_score = doc.metadata.get("similarity_score")
-        score_percent = round(similarity_score * 100, 1) if similarity_score is not None else None
-
-        sources.append(
-            Source(
-                file_name=Path(source_path).name,
-                page=page_number,
-                chunk=doc.metadata.get("chunk_index"),
-                snippet=str(doc.page_content)[:200],
-                score=score_percent,
-                metadata=dict(doc.metadata),
-            )
-        )
-
-    return sources
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -228,7 +187,7 @@ async def query_knowledge_base(
     docs = await asyncio.to_thread(grade, req.question, docs, llm)
 
     stage_context.set("query.sources")
-    sources = _build_sources(docs)
+    sources = build_sources(docs)
     stage_context.set("query.generate")
     answer = await asyncio.to_thread(generate, req.question, docs, llm)
 

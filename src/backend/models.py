@@ -7,9 +7,19 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+
+CORRELATION_ID_PATTERN = (
+    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+
+
+class OutputModel(BaseModel):
+    """Describe all fields emitted by the default success serializer."""
+
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
 
 
 class ErrorCode(StrEnum):
@@ -40,9 +50,9 @@ class ValidationIssue(BaseModel):
     """A declared field path and controlled validation explanation; never input."""
 
     model_config = ConfigDict(extra="forbid")
-    field: str
+    field: str = Field(max_length=256)
     code: ValidationCode
-    message: str
+    message: str = Field(min_length=1, max_length=256)
 
 
 class PublicError(BaseModel):
@@ -50,9 +60,9 @@ class PublicError(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     code: ErrorCode
-    message: str
+    message: str = Field(min_length=1, max_length=512)
     retryable: bool
-    correlation_id: str
+    correlation_id: str = Field(pattern=CORRELATION_ID_PATTERN)
     details: list[ValidationIssue] | None = Field(default=None, max_length=20)
 
 
@@ -102,7 +112,7 @@ class ChatMessage(BaseModel):
     content: str = Field(..., description="Message content")
 
 
-class ModelConfigResponse(BaseModel):
+class ModelConfigResponse(OutputModel):
     """Response with current model configuration (without exposing secrets)."""
 
     model: str = Field(..., description="Current model name")
@@ -110,7 +120,7 @@ class ModelConfigResponse(BaseModel):
     has_api_key: bool = Field(..., description="Whether API key is configured")
 
 
-class Source(BaseModel):
+class Source(OutputModel):
     """A source citation from retrieved documents."""
 
     file_name: str = Field(..., description="Source file name")
@@ -121,7 +131,7 @@ class Source(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
-class KnowledgeBase(BaseModel):
+class KnowledgeBase(OutputModel):
     """Knowledge base summary for API responses."""
 
     id: str
@@ -136,7 +146,7 @@ class KnowledgeBase(BaseModel):
     last_modified: datetime | None = None
 
 
-class HealthResponse(BaseModel):
+class HealthResponse(OutputModel):
     """Health check response."""
 
     status: str = "ok"
@@ -162,28 +172,28 @@ class KBManifest(BaseModel):
     documents: list[DocumentMeta] = Field(default_factory=list)
 
 
-class StepEvent(BaseModel):
+class StepEvent(OutputModel):
     """A reasoning step event."""
 
-    type: str  # analyzing, rewriting, searching, grading, generating
+    type: Literal["analyzing", "rewriting", "searching", "grading", "generating"]
     title: str
     description: str = ""
     details: dict[str, Any] = Field(default_factory=dict)
 
 
-class TokenEvent(BaseModel):
+class TokenEvent(OutputModel):
     """A token streaming event."""
 
     token: str
 
 
-class SourcesEvent(BaseModel):
+class SourcesEvent(OutputModel):
     """Sources citation event."""
 
     sources: list[Source]
 
 
-class CompleteEvent(BaseModel):
+class CompleteEvent(OutputModel):
     """Completion event with final answer."""
 
     answer: str
@@ -193,13 +203,45 @@ class ErrorEvent(ErrorEnvelope):
     """Terminal execution failure; serialized identically to HTTP errors."""
 
 
-class ChatResponse(BaseModel):
+class StepFrame(OutputModel):
+    type: Literal["step"] = "step"
+    data: StepEvent
+
+
+class TokenFrame(OutputModel):
+    type: Literal["token"] = "token"
+    data: TokenEvent
+
+
+class SourcesFrame(OutputModel):
+    type: Literal["sources"] = "sources"
+    data: SourcesEvent
+
+
+class CompleteFrame(OutputModel):
+    type: Literal["complete"] = "complete"
+    data: CompleteEvent
+
+
+class ErrorFrame(OutputModel):
+    type: Literal["error"] = "error"
+    data: ErrorEvent
+
+
+ExecutionEvent = Annotated[
+    StepFrame | TokenFrame | SourcesFrame | CompleteFrame | ErrorFrame,
+    Field(discriminator="type"),
+]
+EXECUTION_EVENT_ADAPTER = TypeAdapter(ExecutionEvent)
+
+
+class ChatResponse(OutputModel):
     """Non-streaming chat response."""
 
     answer: str = Field(..., description="Final assistant answer")
 
 
-class QueryResponse(BaseModel):
+class QueryResponse(OutputModel):
     """Non-streaming query response for a knowledge base."""
 
     answer: str = Field(..., description="Final answer")
@@ -237,6 +279,13 @@ __all__ = [
     "SourcesEvent",
     "CompleteEvent",
     "ErrorEvent",
+    "StepFrame",
+    "TokenFrame",
+    "SourcesFrame",
+    "CompleteFrame",
+    "ErrorFrame",
+    "ExecutionEvent",
+    "EXECUTION_EVENT_ADAPTER",
     # Non-streaming responses
     "ChatResponse",
     "QueryResponse",

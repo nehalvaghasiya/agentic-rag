@@ -149,7 +149,7 @@ async def test_query_stream_has_sse_headers_and_complete_event(
 
 
 def test_source_conversion_handles_labels_fallbacks_scores_and_snippets(tmp_path) -> None:
-    from backend.routes import _build_sources
+    from backend.sources import build_sources
 
     long_text = "x" * 250
     docs = [
@@ -177,7 +177,7 @@ def test_source_conversion_handles_labels_fallbacks_scores_and_snippets(tmp_path
         ),
     ]
 
-    sources = _build_sources(docs)
+    sources = build_sources(docs)
 
     assert sources[0].file_name == "labelled.pdf"
     assert sources[0].page == 12

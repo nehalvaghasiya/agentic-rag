@@ -15,6 +15,7 @@ REQUIRED_JOBS = (
     "backend_tests",
     "backend_package",
     "frontend",
+    "contracts",
     "browser",
 )
 
