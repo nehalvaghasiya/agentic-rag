@@ -43,6 +43,7 @@ def main() -> int:
             ("backend quality", [sys.executable, "-m", "devtools.lint"], ROOT),
             ("backend tests", [sys.executable, "-m", "pytest", "-p", "no:sugar"], ROOT),
             ("frontend lint", ["npm", "run", "lint"], frontend),
+            ("API contracts", [sys.executable, "-m", "devtools.contracts", "check"], ROOT),
             ("frontend types", ["npm", "run", "type-check"], frontend),
             ("frontend tests", ["npm", "test"], frontend),
             ("frontend build", ["npm", "run", "build"], frontend),
