@@ -73,3 +73,10 @@ To override:
 cd src/frontend
 VITE_API_URL=http://127.0.0.1:8001 npm run dev
 ```
+
+## Typed API boundary
+
+The client, adapters, and application state consume generated OpenAPI types and
+validate responses and SSE events before use. See [the contract workflow](../../contracts/README.md)
+for regeneration and drift checks. Generated declarations are checked in; ordinary
+frontend tests and builds do not require a running backend.
