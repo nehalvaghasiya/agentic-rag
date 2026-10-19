@@ -44,6 +44,7 @@ export const chatEventsFixture = [
       type: "analyzing",
       title: "Analyzing request",
       description: "Preparing a deterministic response.",
+      details: {},
     },
   },
   { type: "token", data: { token: "Fixture " } },
