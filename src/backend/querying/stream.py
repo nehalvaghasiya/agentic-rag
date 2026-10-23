@@ -31,12 +31,13 @@ from backend.models import (
     TokenEvent,
     TokenFrame,
 )
+from backend.prompts import build_chat_messages
 from backend.querying.nodes import generate_stream, grade, retrieve, rewrite_query
 from backend.sources import build_sources
 
 if TYPE_CHECKING:
     from backend.config import Settings
-    from backend.models import KBManifest
+    from backend.models import ChatMessage, KBManifest
     from backend.storage.vector import VectorStore
 
 
@@ -240,27 +241,25 @@ async def _query(
 
 
 async def stream_chat(
-    message: str,
+    messages: list[ChatMessage],
     settings: Settings,
 ) -> AsyncGenerator[str, None]:
     """Stream chat with the same terminal failure semantics as HTTP/query."""
-    async with aclosing(_safe_stream(_chat(message, settings), "chat")) as events:
+    async with aclosing(_safe_stream(_chat(messages, settings), "chat")) as events:
         async for event in events:
             yield event
 
 
-async def _chat(message: str, settings: Settings) -> AsyncGenerator[str, None]:
+async def _chat(messages: list[ChatMessage], settings: Settings) -> AsyncGenerator[str, None]:
     """Stream a chat response.
 
     Args:
-        message: User message to respond to.
+        messages: Validated conversation history.
         settings: Application settings.
 
     Yields:
         SSE formatted strings for each event.
     """
-    from langchain_core.messages import HumanMessage
-
     from backend.llm import get_llm
 
     llm = get_llm(settings)
@@ -276,8 +275,7 @@ async def _chat(message: str, settings: Settings) -> AsyncGenerator[str, None]:
         )
     )
 
-    # Create simple message list
-    lc_messages = [HumanMessage(content=message)]
+    lc_messages = build_chat_messages(messages)
 
     full_answer = ""
     stage_context.set("chat.generate")

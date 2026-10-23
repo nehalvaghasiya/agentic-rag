@@ -14,8 +14,8 @@ from backend.config import Settings
 from backend.dependencies import KBStoreDep, ServicesDep, SettingsDep
 from backend.errors import ApplicationError, stage_context
 from backend.models import (
+    ChatRequest,
     ChatResponse,
-    ChatStreamRequest,
     ErrorCode,
     HealthResponse,
     KnowledgeBase,
@@ -24,10 +24,12 @@ from backend.models import (
     QueryRequest,
     QueryResponse,
 )
+from backend.prompts import build_chat_messages
 from backend.querying import stream_chat, stream_query
+from backend.request_validation import BoundedJSONRoute
 from backend.sources import build_sources
 
-router = APIRouter()
+router = APIRouter(route_class=BoundedJSONRoute)
 SSE_RESPONSES: dict[int | str, dict[str, Any]] = {
     200: {
         "description": (
@@ -195,7 +197,7 @@ async def query_knowledge_base(
 
 
 @router.post("/chat/stream", response_class=StreamingResponse, responses=SSE_RESPONSES)
-async def chat_stream(req: ChatStreamRequest, settings: SettingsDep) -> StreamingResponse:
+async def chat_stream(req: ChatRequest, settings: SettingsDep) -> StreamingResponse:
     """Direct chat without knowledge base (streaming).
 
     Returns Server-Sent Events (SSE) with:
@@ -206,17 +208,11 @@ async def chat_stream(req: ChatStreamRequest, settings: SettingsDep) -> Streamin
 
     Accepts optional model_config_override to use custom LLM settings.
     """
-    # Convert to simple message string (use last user message)
-    last_user = next(
-        (m.content for m in reversed(req.messages) if m.role == "user"),
-        "",
-    )
-
     # Apply model config override if provided
     effective_settings = _apply_model_override(settings, req.model_config_override)
 
     return StreamingResponse(
-        stream_chat(last_user, effective_settings),
+        stream_chat(req.messages, effective_settings),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -227,14 +223,12 @@ async def chat_stream(req: ChatStreamRequest, settings: SettingsDep) -> Streamin
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatStreamRequest, settings: SettingsDep) -> ChatResponse:
+async def chat(req: ChatRequest, settings: SettingsDep) -> ChatResponse:
     """General chat (non-streaming).
 
     This endpoint exists as a fallback for environments that don't support SSE
     streaming.
     """
-    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-
     from backend.llm import get_llm
 
     effective_settings = _apply_model_override(settings, req.model_config_override)
@@ -244,15 +238,7 @@ async def chat(req: ChatStreamRequest, settings: SettingsDep) -> ChatResponse:
     if llm is None:
         raise ApplicationError(ErrorCode.MODEL_NOT_CONFIGURED)
 
-    lc_messages = []
-    for m in req.messages:
-        role = (m.role or "").lower()
-        if role == "system":
-            lc_messages.append(SystemMessage(content=m.content))
-        elif role == "assistant":
-            lc_messages.append(AIMessage(content=m.content))
-        else:
-            lc_messages.append(HumanMessage(content=m.content))
+    lc_messages = build_chat_messages(req.messages)
 
     stage_context.set("chat.generate")
     response = await asyncio.to_thread(llm.invoke, lc_messages)

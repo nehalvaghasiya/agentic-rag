@@ -12,6 +12,7 @@ from langchain_core.documents import Document
 
 from backend.config import Prompts
 from backend.errors import report_failure
+from backend.prompts import build_answer_messages, build_task_messages
 
 if TYPE_CHECKING:
     from backend.storage.vector import VectorStore
@@ -31,7 +32,7 @@ def rewrite_query(question: str, llm) -> str:
         return question
 
     try:
-        prompt = Prompts.QUERY_REWRITE.format(question=question)
+        prompt = build_task_messages(Prompts.QUERY_REWRITE, question)
         response = llm.invoke(prompt)
         result = str(getattr(response, "content", response)).strip()
         return result or question
@@ -72,7 +73,9 @@ def grade(question: str, docs: list[Document], llm) -> list[Document]:
     for doc in docs:
         try:
             excerpt = doc.page_content[:1000]
-            prompt = Prompts.GRADE.format(question=question, excerpt=excerpt)
+            prompt = build_task_messages(
+                Prompts.GRADE, f"Question: {question}\n\nExcerpt: {excerpt}"
+            )
             response = llm.invoke(prompt)
             answer = str(getattr(response, "content", response)).strip().lower()
 
@@ -112,14 +115,7 @@ def generate(question: str, docs: list[Document], llm) -> str:
             snippets.append(f"[{i}] {source}: {doc.page_content[:200]}...")
         return "Here are the relevant excerpts:\n\n" + "\n\n".join(snippets)
 
-    # Build context
-    context_parts = []
-    for i, doc in enumerate(docs[:5], 1):
-        source = doc.metadata.get("source", "unknown")
-        context_parts.append(f"[{i}] Source: {source}\n{doc.page_content}")
-
-    context = "\n\n".join(context_parts)
-    prompt = Prompts.ANSWER.format(question=question, context=context)
+    prompt = build_answer_messages(question, docs)
 
     response = llm.invoke(prompt)
     return str(getattr(response, "content", response)).strip()
@@ -150,14 +146,7 @@ def generate_stream(question: str, docs: list[Document], llm):
             yield f"[{i}] {source}: {doc.page_content[:200]}...\n\n"
         return
 
-    # Build context
-    context_parts = []
-    for i, doc in enumerate(docs[:5], 1):
-        source = doc.metadata.get("source", "unknown")
-        context_parts.append(f"[{i}] Source: {source}\n{doc.page_content}")
-
-    context = "\n\n".join(context_parts)
-    prompt = Prompts.ANSWER.format(question=question, context=context)
+    prompt = build_answer_messages(question, docs)
 
     for chunk in llm.stream(prompt):
         token = getattr(chunk, "content", None)
