@@ -12,7 +12,7 @@ from langchain_core.documents import Document
 
 import backend.querying.stream as stream_module
 from backend.config import Settings
-from backend.models import KBManifest
+from backend.models import ChatMessage, KBManifest
 from backend.querying.nodes import generate, generate_stream, grade, retrieve, rewrite_query
 from backend.querying.stream import stream_chat, stream_query
 from backend.storage import VectorStore
@@ -60,7 +60,7 @@ def test_rewrite_query_uses_scripted_response_and_records_prompt() -> None:
 
     assert result == "concise search"
     assert len(llm.invoke_calls) == 1
-    assert "A longer question?" in llm.invoke_calls[0]
+    assert llm.invoke_calls[0][1].content == "A longer question?"
 
 
 @pytest.mark.parametrize("result", ["", "   ", RuntimeError("provider failed")])
@@ -107,8 +107,9 @@ def test_generate_and_generate_stream_use_scripted_provider() -> None:
 
     assert generate("question", docs, invoke_llm) == "final answer"
     assert list(generate_stream("question", docs, stream_llm)) == ["final ", "answer"]
-    assert "known fact" in invoke_llm.invoke_calls[0]
-    assert "known fact" in stream_llm.stream_calls[0]
+    assert "known fact" in invoke_llm.invoke_calls[0][1].content
+    assert invoke_llm.invoke_calls[0] == stream_llm.stream_calls[0]
+    assert "known fact" in stream_llm.stream_calls[0][1].content
 
 
 def test_generate_stream_contains_provider_exception() -> None:
@@ -203,7 +204,9 @@ async def test_query_stream_provider_failure_emits_error_without_completion(
 
 @pytest.mark.asyncio
 async def test_chat_stream_without_llm_emits_configuration_error(settings: Settings) -> None:
-    events = await collect_events(stream_chat("hello", settings))
+    events = await collect_events(
+        stream_chat([ChatMessage(role="user", content="hello")], settings)
+    )
 
     assert len(events) == 1
     assert events[0][0] == "error"

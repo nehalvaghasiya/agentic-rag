@@ -58,6 +58,7 @@ def test_schema_is_consistent_isolated_and_resolvable(app, monkeypatch, tmp_path
     monkeypatch.setattr("backend.storage.KBStore", forbidden)
     monkeypatch.setattr(Path, "mkdir", forbidden)
     first = contracts.export_schema()
+    assert first["info"]["version"] == "2.0.0"
     assert first == contracts.export_schema() == app.openapi() == CONTRACT
     assert "private-sentinel" not in json.dumps(first)
     assert app.state.services is None
@@ -112,7 +113,11 @@ async def test_all_json_routes_and_streams_serialize_to_the_contract(app_client,
     validate_response(await app_client.get("/api/kb/missing"), "/api/kb/{kb_id}")
     validate_response(await app_client.post("/api/chat", json={}), "/api/chat", "post")
     validate_response(
-        await app_client.post("/api/chat", json={"messages": []}), "/api/chat", "post"
+        await app_client.post(
+            "/api/chat", json={"messages": [{"role": "user", "content": "hello"}]}
+        ),
+        "/api/chat",
+        "post",
     )
 
     query_url = f"/api/kb/{created['id']}/query"
@@ -153,7 +158,9 @@ async def test_invalid_internal_event_becomes_safe_terminal_error(app_client, mo
         yield streams._sse(event)
 
     monkeypatch.setattr(streams, "_chat", invalid_events)
-    response = await app_client.post("/api/chat/stream", json={"messages": []})
+    response = await app_client.post(
+        "/api/chat/stream", json={"messages": [{"role": "user", "content": "hello"}]}
+    )
     events = validate_stream(response)
     assert len(events) == 1
     assert events[0][1]["error"]["code"] == "INTERNAL_ERROR"
