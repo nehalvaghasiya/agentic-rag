@@ -9,7 +9,17 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator
+
+from backend.request_limits import (
+    MAX_API_KEY_CHARACTERS,
+    MAX_BASE_URL_CHARACTERS,
+    MAX_HISTORY_CHARACTERS,
+    MAX_HISTORY_MESSAGES,
+    MAX_MODEL_CHARACTERS,
+    MAX_TEXT_CHARACTERS,
+    NONBLANK_PATTERN,
+)
 
 CORRELATION_ID_PATTERN = (
     "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
@@ -29,6 +39,7 @@ class ErrorCode(StrEnum):
     NOT_FOUND = "NOT_FOUND"
     METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"
     CONFLICT = "CONFLICT"
+    PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE"
     VALIDATION_ERROR = "VALIDATION_ERROR"
     RATE_LIMITED = "RATE_LIMITED"
     QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
@@ -73,43 +84,91 @@ class ErrorEnvelope(BaseModel):
     error: PublicError
 
 
-class ModelConfig(BaseModel):
+class PublicRequest(BaseModel):
+    """Accept only declared fields and their exact JSON types."""
+
+    model_config = ConfigDict(strict=True, extra="forbid", hide_input_in_errors=True)
+
+
+class ModelConfig(PublicRequest):
     """LLM model configuration for API requests."""
 
-    api_key: str | None = Field(default=None, description="API key (overrides env)")
-    model: str | None = Field(default=None, description="Model name (overrides env)")
-    base_url: str | None = Field(default=None, description="API base URL (overrides env)")
+    api_key: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=MAX_API_KEY_CHARACTERS,
+        pattern=NONBLANK_PATTERN,
+        description="API key (overrides env)",
+    )
+    model: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=MAX_MODEL_CHARACTERS,
+        pattern=NONBLANK_PATTERN,
+        description="Model name (overrides env)",
+    )
+    base_url: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=MAX_BASE_URL_CHARACTERS,
+        pattern=NONBLANK_PATTERN,
+        description="API base URL (overrides env)",
+    )
 
 
-class QueryRequest(BaseModel):
+class QueryRequest(PublicRequest):
     """Request to query a knowledge base."""
 
-    question: str = Field(..., description="Question to ask")
+    question: str = Field(
+        min_length=1,
+        max_length=MAX_TEXT_CHARACTERS,
+        pattern=NONBLANK_PATTERN,
+        description="Nonblank question; original text is preserved",
+    )
     model_config_override: ModelConfig | None = Field(
         default=None, description="Optional model config override"
     )
 
 
-class ChatStreamRequest(BaseModel):
-    """Request for streaming chat."""
+class ChatMessage(PublicRequest):
+    """Untrusted dialogue; privileged message roles are server-owned."""
 
-    messages: list[ChatMessage] = Field(..., description="Chat history")
+    role: Literal["user", "assistant"]
+    content: str = Field(
+        min_length=1,
+        max_length=MAX_TEXT_CHARACTERS,
+        pattern=NONBLANK_PATTERN,
+        description="Nonblank content; original text is preserved",
+    )
+
+
+class ChatRequest(PublicRequest):
+    """One bounded conversation contract for regular and streaming chat."""
+
+    messages: list[ChatMessage] = Field(
+        min_length=1,
+        max_length=MAX_HISTORY_MESSAGES,
+        description=(
+            f"Chat history ending in a user message; at most {MAX_HISTORY_CHARACTERS:,} "
+            "Unicode code points across all message content. Order and text are preserved."
+        ),
+    )
     model_config_override: ModelConfig | None = Field(
         default=None, description="Optional model config override"
     )
 
+    @field_validator("messages")
+    @classmethod
+    def validate_conversation(cls, messages: list[ChatMessage]) -> list[ChatMessage]:
+        if sum(len(message.content) for message in messages) > MAX_HISTORY_CHARACTERS:
+            raise ValueError("Chat history exceeds its total content budget")
+        if messages[-1].role != "user":
+            raise ValueError("Chat history must end with a user message")
+        return messages
 
-class ChatRequest(BaseModel):
-    """Request for general chat."""
 
-    messages: list[ChatMessage] = Field(..., description="Chat history")
-
-
-class ChatMessage(BaseModel):
-    """A single chat message."""
-
-    role: str = Field(..., description="Message role: user, assistant, or system")
-    content: str = Field(..., description="Message content")
+# Internal compatibility name; both endpoints and OpenAPI use ChatRequest.
+ChatStreamRequest = ChatRequest
 
 
 class ModelConfigResponse(OutputModel):
@@ -248,11 +307,6 @@ class QueryResponse(OutputModel):
     sources: list[Source] = Field(default_factory=list, description="Retrieved sources")
 
 
-# Fix forward reference
-ChatRequest.model_rebuild()
-ChatStreamRequest.model_rebuild()
-
-
 __all__ = [
     "ErrorCode",
     "ValidationCode",
@@ -260,6 +314,7 @@ __all__ = [
     "PublicError",
     "ErrorEnvelope",
     # Request models
+    "PublicRequest",
     "ModelConfig",
     "QueryRequest",
     "ChatStreamRequest",

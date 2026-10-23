@@ -7,7 +7,7 @@ from fastapi.encoders import jsonable_encoder
 
 from backend.models import EXECUTION_EVENT_ADAPTER
 
-API_VERSION = "1.0.0"
+API_VERSION = "2.0.0"
 EVENT_SCHEMA_REF = {"$ref": "#/components/schemas/ExecutionEvent"}
 
 

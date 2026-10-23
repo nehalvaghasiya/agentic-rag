@@ -203,6 +203,44 @@ Base URL: `http://127.0.0.1:8001`
 - `POST /api/chat/stream` — SSE stream for general chat
   - request body: `{ "messages": [{"role": "user|assistant", "content": "..."}], "model_config_override": ... }`
 
+### Public JSON request limits (API 2.0.0)
+
+Both regular and streaming chat/query endpoints use strict request models and
+reject unsupported fields at the root, inside messages, and inside model overrides.
+Client messages accept exactly `user` or `assistant`. Histories must end with a
+user message; assistant greetings and consecutive messages with the same role are
+supported. Both chat modes send the complete accepted history to the model.
+
+| Input | Limit |
+|---|---:|
+| Question or individual message | 1–8,000 Unicode code points, containing non-whitespace text |
+| Chat history | 1–50 messages, at most 64,000 content code points combined |
+| Model identifier override | 1–256 characters when supplied |
+| API key override | 1–4,096 characters when supplied |
+| Base URL override | 1–2,048 characters when supplied |
+| Raw JSON body | 1,048,576 bytes (1 MiB), inclusive |
+
+Original text, indentation, and surrounding whitespace are preserved and count
+toward the limits. Invalid histories are rejected; the server does not truncate
+content or prune messages. Omitted or `null` override values use server defaults;
+an empty override object is valid, while blank supplied strings are rejected.
+
+Body bytes are counted as received before JSON decoding, including chunked bodies
+and requests with misleading `Content-Length` headers. An oversized body returns
+HTTP 413 `PAYLOAD_TOO_LARGE`. Invalid decoded fields return HTTP 422
+`VALIDATION_ERROR`. Both failures precede request-specific storage/provider work
+and the opening of SSE responses. Existing application startup and service lookup
+remain separate from that work.
+
+The server prepends its own system policy for chat and separates trusted rewrite,
+grading, and answer instructions from user questions and retrieved excerpts.
+Client-supplied system/developer/tool roles and policy fields are rejected.
+Instruction-like text inside content stays ordinary dialogue or task data.
+
+API 2.0.0 deliberately rejects formerly accepted roles and payloads. Deploy matching
+frontend/backend contracts together. KB multipart uploads, provider URL allowlists,
+rate limits, and output-size limits are outside these JSON request bounds.
+
 ### Safe failures and correlation
 
 HTTP failures use one JSON envelope. SSE execution failures send the same envelope
@@ -240,6 +278,7 @@ validator messages are never returned.
 | `NOT_FOUND` | 404 | No | The requested resource was not found. |
 | `METHOD_NOT_ALLOWED` | 405 | No | This method is not supported for this endpoint. |
 | `CONFLICT` | 409 | No | This request conflicts with the current resource state. Refresh before trying again. |
+| `PAYLOAD_TOO_LARGE` | 413 | No | The request is too large. Reduce its size and try again. |
 | `VALIDATION_ERROR` | 422 | No | Some request fields are invalid. Check the field details. |
 | `RATE_LIMITED` | 429 | Yes | Too many requests. Try again later. |
 | `QUOTA_EXCEEDED` | 429 | No | The provider quota is exhausted. Check billing or quota before trying again. |

@@ -29,15 +29,22 @@
         "type": "object"
       },
       "ChatMessage": {
-        "description": "A single chat message.",
+        "additionalProperties": false,
+        "description": "Untrusted dialogue; privileged message roles are server-owned.",
         "properties": {
           "content": {
-            "description": "Message content",
+            "description": "Nonblank content; original text is preserved",
+            "maxLength": 8000,
+            "minLength": 1,
+            "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
             "title": "Content",
             "type": "string"
           },
           "role": {
-            "description": "Message role: user, assistant, or system",
+            "enum": [
+              "user",
+              "assistant"
+            ],
             "title": "Role",
             "type": "string"
           }
@@ -49,29 +56,17 @@
         "title": "ChatMessage",
         "type": "object"
       },
-      "ChatResponse": {
-        "description": "Non-streaming chat response.",
-        "properties": {
-          "answer": {
-            "description": "Final assistant answer",
-            "title": "Answer",
-            "type": "string"
-          }
-        },
-        "required": [
-          "answer"
-        ],
-        "title": "ChatResponse",
-        "type": "object"
-      },
-      "ChatStreamRequest": {
-        "description": "Request for streaming chat.",
+      "ChatRequest": {
+        "additionalProperties": false,
+        "description": "One bounded conversation contract for regular and streaming chat.",
         "properties": {
           "messages": {
-            "description": "Chat history",
+            "description": "Chat history ending in a user message; at most 64,000 Unicode code points across all message content. Order and text are preserved.",
             "items": {
               "$ref": "#/components/schemas/ChatMessage"
             },
+            "maxItems": 50,
+            "minItems": 1,
             "title": "Messages",
             "type": "array"
           },
@@ -90,7 +85,22 @@
         "required": [
           "messages"
         ],
-        "title": "ChatStreamRequest",
+        "title": "ChatRequest",
+        "type": "object"
+      },
+      "ChatResponse": {
+        "description": "Non-streaming chat response.",
+        "properties": {
+          "answer": {
+            "description": "Final assistant answer",
+            "title": "Answer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "answer"
+        ],
+        "title": "ChatResponse",
         "type": "object"
       },
       "CompleteEvent": {
@@ -168,6 +178,7 @@
           "NOT_FOUND",
           "METHOD_NOT_ALLOWED",
           "CONFLICT",
+          "PAYLOAD_TOO_LARGE",
           "VALIDATION_ERROR",
           "RATE_LIMITED",
           "QUOTA_EXCEEDED",
@@ -349,11 +360,15 @@
         "type": "object"
       },
       "ModelConfig": {
+        "additionalProperties": false,
         "description": "LLM model configuration for API requests.",
         "properties": {
           "api_key": {
             "anyOf": [
               {
+                "maxLength": 4096,
+                "minLength": 1,
+                "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
                 "type": "string"
               },
               {
@@ -366,6 +381,9 @@
           "base_url": {
             "anyOf": [
               {
+                "maxLength": 2048,
+                "minLength": 1,
+                "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
                 "type": "string"
               },
               {
@@ -378,6 +396,9 @@
           "model": {
             "anyOf": [
               {
+                "maxLength": 256,
+                "minLength": 1,
+                "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
                 "type": "string"
               },
               {
@@ -473,6 +494,7 @@
         "type": "object"
       },
       "QueryRequest": {
+        "additionalProperties": false,
         "description": "Request to query a knowledge base.",
         "properties": {
           "model_config_override": {
@@ -487,7 +509,10 @@
             "description": "Optional model config override"
           },
           "question": {
-            "description": "Question to ask",
+            "description": "Nonblank question; original text is preserved",
+            "maxLength": 8000,
+            "minLength": 1,
+            "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
             "title": "Question",
             "type": "string"
           }
@@ -754,7 +779,7 @@
   "info": {
     "description": "RAG-based question answering with streaming support. Failures use ErrorEnvelope with a stable code, safe message, advisory retryability and correlation_id. X-Correlation-ID identifies every application response. SSE execution failures use the same envelope in one terminal error event; HTTP 200 only opens the stream.",
     "title": "Agentic RAG API",
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -837,6 +862,23 @@
               }
             },
             "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
             "headers": {
               "X-Correlation-ID": {
                 "schema": {
@@ -959,7 +1001,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChatStreamRequest"
+                "$ref": "#/components/schemas/ChatRequest"
               }
             }
           },
@@ -1036,6 +1078,23 @@
               }
             },
             "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
             "headers": {
               "X-Correlation-ID": {
                 "schema": {
@@ -1158,7 +1217,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChatStreamRequest"
+                "$ref": "#/components/schemas/ChatRequest"
               }
             }
           },
@@ -1235,6 +1294,23 @@
               }
             },
             "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
             "headers": {
               "X-Correlation-ID": {
                 "schema": {
@@ -1435,6 +1511,23 @@
               }
             }
           },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "422": {
             "content": {
               "application/json": {
@@ -1620,6 +1713,23 @@
               }
             },
             "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
             "headers": {
               "X-Correlation-ID": {
                 "schema": {
@@ -1825,6 +1935,23 @@
               }
             }
           },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2017,6 +2144,23 @@
               }
             },
             "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
             "headers": {
               "X-Correlation-ID": {
                 "schema": {
@@ -2235,6 +2379,23 @@
               }
             }
           },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2445,6 +2606,23 @@
               }
             }
           },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2629,6 +2807,23 @@
               }
             },
             "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
             "headers": {
               "X-Correlation-ID": {
                 "schema": {

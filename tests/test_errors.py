@@ -143,7 +143,7 @@ async def test_provider_failures_match_across_all_transports(
             "invalid_type",
         ),
         (
-            {"messages": [], "model_config_override": {"api_key": [PRIVATE]}},
+            {**MESSAGES, "model_config_override": {"api_key": [PRIVATE]}},
             "model_config_override.api_key",
             "invalid_type",
         ),
@@ -328,7 +328,7 @@ async def test_queue_expiry_after_partial_output_is_terminal(monkeypatch, settin
         "Store", (), {"search": lambda self, query, k: [Document(page_content="context")]}
     )()
     iterator = (
-        streams.stream_chat("hello", settings)
+        streams.stream_chat(ChatStreamRequest.model_validate(MESSAGES).messages, settings)
         if kind == "chat"
         else streams.stream_query("question", (manifest(), store), settings)
     )
@@ -349,7 +349,9 @@ async def test_stream_does_not_convert_cancellation_or_disconnect(
 
     monkeypatch.setattr(providers, "get_llm", interrupted)
     with pytest.raises(failure):
-        await collect_events(streams.stream_chat("hello", settings))
+        await collect_events(
+            streams.stream_chat(ChatStreamRequest.model_validate(MESSAGES).messages, settings)
+        )
     assert not caplog.records
     assert correlation_context.get() is None
 
@@ -373,7 +375,7 @@ def test_scrubbed_chained_diagnostics_keep_categories_not_text(caplog):
 async def test_openapi_documents_error_contract_and_catalog(app_client):
     schema = (await app_client.get("/openapi.json")).json()
     responses = schema["paths"]["/api/chat"]["post"]["responses"]
-    for status in ["400", "404", "405", "409", "422", "429", "500", "502", "503", "504"]:
+    for status in ["400", "404", "405", "409", "413", "422", "429", "500", "502", "503", "504"]:
         assert responses[status]["content"]["application/json"]["schema"]["$ref"].endswith(
             "/ErrorEnvelope"
         )

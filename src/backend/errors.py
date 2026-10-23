@@ -47,6 +47,9 @@ CATALOG: dict[ErrorCode, ErrorSpec] = {
         False,
         "This request conflicts with the current resource state. Refresh before trying again.",
     ),
+    ErrorCode.PAYLOAD_TOO_LARGE: ErrorSpec(
+        413, False, "The request is too large. Reduce its size and try again."
+    ),
     ErrorCode.VALIDATION_ERROR: ErrorSpec(
         422, False, "Some request fields are invalid. Check the field details."
     ),
@@ -224,6 +227,7 @@ def normalize_error(
             404: ErrorCode.NOT_FOUND,
             405: ErrorCode.METHOD_NOT_ALLOWED,
             409: ErrorCode.CONFLICT,
+            413: ErrorCode.PAYLOAD_TOO_LARGE,
             422: ErrorCode.VALIDATION_ERROR,
             429: ErrorCode.RATE_LIMITED,
             500: ErrorCode.INTERNAL_ERROR,

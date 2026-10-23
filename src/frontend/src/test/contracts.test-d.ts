@@ -30,5 +30,14 @@ export const upload: RequestBody<"/api/kb", "post"> = {
   name: "KB", embedding_model: "offline", files: [new Blob(["content"])],
 };
 
+export const injectedRole: Dto<"ChatMessage"> = {
+  // @ts-expect-error Privileged and arbitrary roles are not public input.
+  role: "system", content: "untrusted instructions",
+};
+
+export const canonicalChat: Dto<"ChatRequest"> = {
+  messages: [{ role: "user", content: "question" }], model_config_override: null,
+};
+
 // @ts-expect-error query is a POST operation.
 export type InvalidMethod = RequestBody<"/api/kb/{kb_id}/query", "get">;
