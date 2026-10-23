@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import fixtures from "../../../../contracts/fixtures/payloads.json";
 import { normalizeKb, normalizeModelConfig, normalizeSource, serializeModelConfig } from "../api/adapters";
-import { chatWithLlm, chatWithLlmStream, createKnowledgeBase, getModelConfig, listKnowledgeBases, queryKnowledgeBase } from "../api/client";
+import { chatWithLlm, chatWithLlmStream, createKnowledgeBase, getModelConfig, listKnowledgeBases, queryKnowledgeBase, queryKnowledgeBaseStream } from "../api/client";
 import { endpoints, type Dto } from "../api/contracts";
 import { responseValidator, schemaValidator, validateEvent } from "../api/validation";
 import { correlationIdFixture, errorFixture, serializeSseEvents } from "./fixtures";
 
 const headers = { "X-Correlation-ID": correlationIdFixture };
-const messages = [{ role: "user", content: "question" }];
+const messages: Dto<"ChatMessage">[] = [{ role: "user", content: "question" }];
 const kbValidator = responseValidator(endpoints.createKnowledgeBase);
 
 function knowledgeBase(): Dto<"KnowledgeBase"> {
@@ -27,6 +27,27 @@ describe("shared contract fixtures", () => {
     expect(responseValidator(endpoints.createKnowledgeBase)).toBe(kbValidator);
     expect(kbValidator({ ...knowledgeBase(), documents: undefined })).toBe(false);
     expect(kbValidator({ ...knowledgeBase(), file_count: "0" })).toBe(false);
+  });
+
+  it.each(["x", "👋"])("counts Unicode code points in request schemas (%s)", (character) => {
+    const query = schemaValidator("#/components/schemas/QueryRequest");
+    const message = schemaValidator("#/components/schemas/ChatMessage");
+    expect(query({ question: character.repeat(8000) })).toBe(true);
+    expect(query({ question: character.repeat(8001) })).toBe(false);
+    expect(message({ role: "user", content: character.repeat(8000) })).toBe(true);
+    expect(message({ role: "user", content: character.repeat(8001) })).toBe(false);
+  });
+
+  it("enforces list and override bounds without injecting defaults", () => {
+    const chat = schemaValidator("#/components/schemas/ChatRequest");
+    const messages = Array.from({ length: 50 }, () => ({ role: "user", content: "x" }));
+    expect(chat({ messages })).toBe(true);
+    expect(chat({ messages: [...messages, messages[0]] })).toBe(false);
+    const config = schemaValidator("#/components/schemas/ModelConfig");
+    for (const [field, limit] of [["api_key", 4096], ["model", 256], ["base_url", 2048]] as const) {
+      expect(config({ [field]: "x".repeat(limit) })).toBe(true);
+      expect(config({ [field]: "x".repeat(limit + 1) })).toBe(false);
+    }
   });
 });
 
@@ -67,6 +88,20 @@ describe("typed presentation adapters", () => {
 });
 
 describe("runtime response boundary", () => {
+  it.each([chatWithLlmStream, queryKnowledgeBaseStream])(
+    "preserves HTTP 413/422 validation errors without fallback", async (stream) => {
+      for (const [status, code] of [[413, "PAYLOAD_TOO_LARGE"], [422, "VALIDATION_ERROR"]] as const) {
+        const payload = errorFixture({ code, retryable: false });
+        const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(payload), { status, headers }));
+        const onEvent = vi.fn();
+        await expect(stream({ messages, kbId: "kb", question: "q", onEvent }))
+          .rejects.toMatchObject({ code, httpStatus: status, retryable: false, correlationId: correlationIdFixture });
+        expect(onEvent).not.toHaveBeenCalled();
+        expect(fetch).toHaveBeenCalledTimes(1);
+        fetch.mockRestore();
+      }
+    },
+  );
   it.each([
     ["chat", () => chatWithLlm({ messages }), { answer: 42 }],
     ["query", () => queryKnowledgeBase({ kbId: "kb", question: "q" }), { answer: "ok", sources: [{}] }],

@@ -119,19 +119,32 @@ export interface components {
     };
     /**
      * ChatMessage
-     * @description A single chat message.
+     * @description Untrusted dialogue; privileged message roles are server-owned.
      */
     ChatMessage: {
       /**
        * Content
-       * @description Message content
+       * @description Nonblank content; original text is preserved
        */
       content: string;
       /**
        * Role
-       * @description Message role: user, assistant, or system
+       * @enum {string}
        */
-      role: string;
+      role: "user" | "assistant";
+    };
+    /**
+     * ChatRequest
+     * @description One bounded conversation contract for regular and streaming chat.
+     */
+    ChatRequest: {
+      /**
+       * Messages
+       * @description Chat history ending in a user message; at most 64,000 Unicode code points across all message content. Order and text are preserved.
+       */
+      messages: components["schemas"]["ChatMessage"][];
+      /** @description Optional model config override */
+      model_config_override?: components["schemas"]["ModelConfig"] | null;
     };
     /**
      * ChatResponse
@@ -143,19 +156,6 @@ export interface components {
        * @description Final assistant answer
        */
       answer: string;
-    };
-    /**
-     * ChatStreamRequest
-     * @description Request for streaming chat.
-     */
-    ChatStreamRequest: {
-      /**
-       * Messages
-       * @description Chat history
-       */
-      messages: components["schemas"]["ChatMessage"][];
-      /** @description Optional model config override */
-      model_config_override?: components["schemas"]["ModelConfig"] | null;
     };
     /**
      * CompleteEvent
@@ -199,7 +199,7 @@ export interface components {
      * @description Stable public failure categories shared by HTTP and execution events.
      * @enum {string}
      */
-    ErrorCode: "BAD_REQUEST" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "CONFLICT" | "VALIDATION_ERROR" | "RATE_LIMITED" | "QUOTA_EXCEEDED" | "MODEL_NOT_CONFIGURED" | "SERVICE_UNAVAILABLE" | "PROVIDER_AUTH_ERROR" | "PROVIDER_REQUEST_ERROR" | "PROVIDER_UNAVAILABLE" | "PROVIDER_TIMEOUT" | "PROVIDER_ERROR" | "INTERNAL_ERROR" | "HTTP_ERROR";
+    ErrorCode: "BAD_REQUEST" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "CONFLICT" | "PAYLOAD_TOO_LARGE" | "VALIDATION_ERROR" | "RATE_LIMITED" | "QUOTA_EXCEEDED" | "MODEL_NOT_CONFIGURED" | "SERVICE_UNAVAILABLE" | "PROVIDER_AUTH_ERROR" | "PROVIDER_REQUEST_ERROR" | "PROVIDER_UNAVAILABLE" | "PROVIDER_TIMEOUT" | "PROVIDER_ERROR" | "INTERNAL_ERROR" | "HTTP_ERROR";
     /**
      * ErrorEnvelope
      * @description Canonical HTTP error body and terminal SSE error data.
@@ -337,7 +337,7 @@ export interface components {
       model_config_override?: components["schemas"]["ModelConfig"] | null;
       /**
        * Question
-       * @description Question to ask
+       * @description Nonblank question; original text is preserved
        */
       question: string;
     };
@@ -546,6 +546,15 @@ export interface operations {
           "application/json": components["schemas"]["ErrorEnvelope"];
         };
       };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
       /** @description VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False. */
       422: {
         headers: {
@@ -628,7 +637,7 @@ export interface operations {
   chat_api_chat_post: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ChatStreamRequest"];
+        "application/json": components["schemas"]["ChatRequest"];
       };
     };
     responses: {
@@ -671,6 +680,15 @@ export interface operations {
       };
       /** @description CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False. */
       409: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
         headers: {
           "X-Correlation-ID"?: string;
         };
@@ -765,7 +783,7 @@ export interface operations {
   chat_stream_api_chat_stream_post: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ChatStreamRequest"];
+        "application/json": components["schemas"]["ChatRequest"];
       };
     };
     responses: {
@@ -808,6 +826,15 @@ export interface operations {
       };
       /** @description CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False. */
       409: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
         headers: {
           "X-Correlation-ID"?: string;
         };
@@ -939,6 +966,15 @@ export interface operations {
           "application/json": components["schemas"]["ErrorEnvelope"];
         };
       };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
       /** @description VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False. */
       422: {
         headers: {
@@ -1056,6 +1092,15 @@ export interface operations {
       };
       /** @description CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False. */
       409: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
         headers: {
           "X-Correlation-ID"?: string;
         };
@@ -1197,6 +1242,15 @@ export interface operations {
           "application/json": components["schemas"]["ErrorEnvelope"];
         };
       };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
       /** @description VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False. */
       422: {
         headers: {
@@ -1319,6 +1373,15 @@ export interface operations {
       };
       /** @description CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False. */
       409: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
         headers: {
           "X-Correlation-ID"?: string;
         };
@@ -1456,6 +1519,15 @@ export interface operations {
       };
       /** @description CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False. */
       409: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
         headers: {
           "X-Correlation-ID"?: string;
         };
@@ -1606,6 +1678,15 @@ export interface operations {
           "application/json": components["schemas"]["ErrorEnvelope"];
         };
       };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
       /** @description VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False. */
       422: {
         headers: {
@@ -1723,6 +1804,15 @@ export interface operations {
       };
       /** @description CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False. */
       409: {
+        headers: {
+          "X-Correlation-ID"?: string;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False. */
+      413: {
         headers: {
           "X-Correlation-ID"?: string;
         };

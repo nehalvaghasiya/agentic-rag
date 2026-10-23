@@ -368,7 +368,7 @@ function useAppStateValue() {
         // Chat without knowledge base
         const history = (chat?.messages ?? [])
           .filter((m) => typeof m?.content === "string" && m.content.trim().length > 0)
-          .map((m) => ({
+          .map<Dto<"ChatMessage">>((m) => ({
             role: m.role === "ai" ? "assistant" : "user",
             content: m.content,
           }));
