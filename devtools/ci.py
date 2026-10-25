@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_JOBS = (
     "workflow",
+    "secrets",
     "backend_quality",
     "backend_tests",
     "backend_package",
