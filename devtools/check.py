@@ -8,11 +8,13 @@ import subprocess
 import sys
 
 from devtools.ci import ROOT, python_matrix
+from devtools.secret_scan import ScanError, verify_version
 
 
 def main() -> int:
     stage = "tool versions"
     try:
+        verify_version()
         supported = {row["label"] for row in python_matrix()["include"]}
         if ".".join(platform.python_version_tuple()[:2]) not in supported:
             raise ValueError(f"Python must be one of {sorted(supported)}")
@@ -36,6 +38,16 @@ def main() -> int:
             ("workflow lint", ["actionlint", "-shellcheck", "shellcheck"], ROOT),
             ("lock freshness", ["uv", "lock", "--check"], ROOT),
             (
+                "secret scanner regression tests",
+                [sys.executable, "-m", "unittest", "devtools.test_secret_scan"],
+                ROOT,
+            ),
+            (
+                "secret history scan",
+                [sys.executable, "-m", "devtools.secret_scan", "history"],
+                ROOT,
+            ),
+            (
                 "frontend lock freshness",
                 [sys.executable, "-m", "devtools.ci", "frontend-lock"],
                 ROOT,
@@ -53,7 +65,7 @@ def main() -> int:
         for stage, command, directory in stages:
             print(f"\nChecking {stage}: {' '.join(command)}", flush=True)
             subprocess.run(command, cwd=directory, check=True)
-    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+    except (OSError, ValueError, ScanError, subprocess.CalledProcessError) as error:
         print(f"\nFAIL: {stage}: {error}", flush=True)
         return 1
     except KeyboardInterrupt:
