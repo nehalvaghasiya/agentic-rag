@@ -4,8 +4,15 @@
       "Body_create_knowledge_base_api_kb_post": {
         "properties": {
           "embedding_model": {
-            "title": "Embedding Model",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Model"
           },
           "files": {
             "items": {
@@ -22,7 +29,6 @@
         },
         "required": [
           "name",
-          "embedding_model",
           "files"
         ],
         "title": "Body_create_knowledge_base_api_kb_post",
@@ -1844,7 +1850,7 @@
         "summary": "List Knowledge Bases"
       },
       "post": {
-        "description": "Create a new knowledge base with uploaded files.\n\nThis endpoint accepts multipart form data with:\n- name: Knowledge base name\n- embedding_model: Model to use for embeddings\n- files: One or more files to index",
+        "description": "Create a new knowledge base with uploaded files.\n\nThis endpoint accepts multipart form data with:\n- name: Knowledge base name\n- embedding_model: Optional model ID; defaults to the server's EMBEDDING_MODEL\n- files: One or more files to index",
         "operationId": "create_knowledge_base_api_kb_post",
         "requestBody": {
           "content": {
