@@ -24,9 +24,8 @@ export function CreateKnowledgeBaseModal({ open, onClose, onCreate }) {
   const [error, setError] = useState("");
 
   const [rankingStrategy, setRankingStrategy] = useState("Hybrid");
-  const [embeddingModel, setEmbeddingModel] = useState(
-    "sentence-transformers/all-MiniLM-L6-v2"
-  );
+  const [embeddingModel, setEmbeddingModel] = useState("");
+  const [customEmbeddingModel, setCustomEmbeddingModel] = useState("");
   const [chunkingStrategy, setChunkingStrategy] = useState("Recursive (800/120)");
 
   useEffect(() => {
@@ -42,6 +41,9 @@ export function CreateKnowledgeBaseModal({ open, onClose, onCreate }) {
     () => files.length > 0,
     [files]
   );
+  const selectedEmbeddingModel = embeddingModel === "custom"
+    ? customEmbeddingModel.trim()
+    : embeddingModel;
 
   const footer = (
     <div className="flex items-center justify-between gap-3">
@@ -52,7 +54,10 @@ export function CreateKnowledgeBaseModal({ open, onClose, onCreate }) {
         </Button>
         <Button
           variant="primary"
-          disabled={submitting || !hasUploadedFile || name.trim().length === 0}
+          disabled={
+            submitting || !hasUploadedFile || name.trim().length === 0
+            || (embeddingModel === "custom" && !selectedEmbeddingModel)
+          }
           onClick={async () => {
             setError("");
             setSubmitting(true);
@@ -60,7 +65,7 @@ export function CreateKnowledgeBaseModal({ open, onClose, onCreate }) {
               await onCreate({
                 name: name.trim(),
                 rankingStrategy,
-                embeddingModel,
+                embeddingModel: selectedEmbeddingModel,
                 chunkingStrategy,
                 files: files.map((f) => f.rawFile),
               });
@@ -184,16 +189,31 @@ export function CreateKnowledgeBaseModal({ open, onClose, onCreate }) {
               <label className="text-xs text-muted">
                 <div className="mb-2 font-semibold">Embedding Model</div>
                 <select
+                  aria-label="Embedding Model"
                   value={embeddingModel}
                   onChange={(e) => setEmbeddingModel(e.target.value)}
                   className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
                 >
+                  <option value="">Use server default</option>
                   <option>deterministic</option>
                   <option>text-embedding-3-small</option>
                   <option>text-embedding-3-large</option>
                   <option>sentence-transformers/all-MiniLM-L6-v2</option>
+                  <option value="custom">Custom model…</option>
                 </select>
               </label>
+
+              {embeddingModel === "custom" ? (
+                <label className="text-xs text-muted">
+                  <div className="mb-2 font-semibold">Custom embedding model</div>
+                  <Input
+                    aria-label="Custom embedding model"
+                    value={customEmbeddingModel}
+                    onChange={(e) => setCustomEmbeddingModel(e.target.value)}
+                    placeholder="openrouter/qwen/qwen3-embedding-8b"
+                  />
+                </label>
+              ) : null}
 
               <label className="text-xs text-muted">
                 <div className="mb-2 font-semibold">Chunking Strategy</div>
