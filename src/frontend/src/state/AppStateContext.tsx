@@ -158,7 +158,7 @@ function useAppStateValue() {
   const createKnowledgeBase = useCallback(async (payload: CreateKnowledgeBaseParams) => {
     const created = await apiCreateKnowledgeBase({
       name: payload.name,
-      embeddingModel: payload.embeddingModel ?? "text-embedding-3-large",
+      embeddingModel: payload.embeddingModel,
       files: payload.files ?? [],
     });
     const kb = normalizeKb(created);
