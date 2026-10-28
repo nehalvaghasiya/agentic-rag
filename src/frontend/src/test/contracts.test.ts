@@ -130,6 +130,14 @@ describe("runtime response boundary", () => {
     expect(body.get("files")).toMatchObject({ name: "notes.txt" });
   });
 
+  it.each([undefined, ""])("uses the server embedding default when no model is selected (%s)", async (embeddingModel) => {
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(knowledgeBase()), { headers }));
+    await createKnowledgeBase({ name: "KB", embeddingModel, files: [new File(["text"], "notes.txt")] });
+    const body = fetch.mock.calls[0][1]?.body;
+    if (!(body instanceof FormData)) throw new Error("Missing multipart body");
+    expect(body.has("embedding_model")).toBe(false);
+  });
+
   it.each(fixtures.filter((fixture) => !fixture.valid && fixture.schema.endsWith("/ExecutionEvent")))(
     "rejects $name before callbacks and never replays the request", async ({ payload }) => {
       const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(
