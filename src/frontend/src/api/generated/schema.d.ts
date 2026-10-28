@@ -57,7 +57,7 @@ export interface paths {
      *
      * This endpoint accepts multipart form data with:
      * - name: Knowledge base name
-     * - embedding_model: Model to use for embeddings
+     * - embedding_model: Optional model ID; defaults to the server's EMBEDDING_MODEL
      * - files: One or more files to index
      */
     post: operations["create_knowledge_base_api_kb_post"];
@@ -111,7 +111,7 @@ export interface components {
     /** Body_create_knowledge_base_api_kb_post */
     Body_create_knowledge_base_api_kb_post: {
       /** Embedding Model */
-      embedding_model: string;
+      embedding_model?: string | null;
       /** Files */
       files: Blob[];
       /** Name */
@@ -1186,7 +1186,7 @@ export interface operations {
    *
    * This endpoint accepts multipart form data with:
    * - name: Knowledge base name
-   * - embedding_model: Model to use for embeddings
+   * - embedding_model: Optional model ID; defaults to the server's EMBEDDING_MODEL
    * - files: One or more files to index
    */
   create_knowledge_base_api_kb_post: {
