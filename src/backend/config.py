@@ -40,9 +40,21 @@ class Settings(BaseSettings):
     openai_base_url: str | None = Field(default=None, description="Custom OpenAI base URL")
 
     # Embeddings
+    embedding_provider: Literal["auto", "openai", "huggingface"] = Field(
+        default="auto",
+        description="Embedding provider; 'openai' supports OpenAI-compatible APIs",
+    )
     embedding_model: str = Field(
         default="sentence-transformers/all-MiniLM-L6-v2",
         description="Default embedding model",
+    )
+    embedding_api_key: SecretStr | None = Field(
+        default=None,
+        description="Embedding API key; defaults to OPENAI_API_KEY",
+    )
+    embedding_base_url: str | None = Field(
+        default=None,
+        description="Embedding API base URL; defaults to OPENAI_BASE_URL",
     )
 
     # Mode
@@ -117,6 +129,7 @@ _SETTING_RULES = {
     "top_k": "TOP_K must be an integer greater than or equal to 1.",
     "max_retries": "MAX_RETRIES must be an integer greater than or equal to 0.",
     "mode": "MODE must be 'production' or 'deterministic'.",
+    "embedding_provider": "EMBEDDING_PROVIDER must be 'auto', 'openai', or 'huggingface'.",
     "cors_origins": "CORS_ORIGINS must be a JSON array of strings.",
 }
 
