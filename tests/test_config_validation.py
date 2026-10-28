@@ -155,6 +155,10 @@ def test_settings_sources_retain_existing_precedence(monkeypatch, tmp_path: Path
         ("CHUNK_SIZE=4\nCHUNK_OVERLAP=4\n", "CHUNK_OVERLAP must be smaller than CHUNK_SIZE"),
         ("MODE=unsupported\n", "MODE must be 'production' or 'deterministic'"),
         ("CORS_ORIGINS=invalid-json\n", "CORS_ORIGINS must be a JSON array of strings"),
+        (
+            "EMBEDDING_PROVIDER=unsupported\n",
+            "EMBEDDING_PROVIDER must be 'auto', 'openai', or 'huggingface'",
+        ),
     ],
 )
 def test_invalid_dotenv_values_fail_factory_creation(

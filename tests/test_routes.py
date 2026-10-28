@@ -56,7 +56,13 @@ async def test_model_configuration_reports_but_never_returns_secret(
     app_client: httpx.AsyncClient, app: FastAPI, settings: Settings
 ) -> None:
     secret = "test-only-provider-secret"
-    configured = settings.model_copy(update={"openai_api_key": SecretStr(secret)})
+    embedding_secret = "test-only-embedding-secret"
+    configured = settings.model_copy(
+        update={
+            "openai_api_key": SecretStr(secret),
+            "embedding_api_key": SecretStr(embedding_secret),
+        }
+    )
 
     async def override_settings() -> Settings:
         return configured
@@ -68,6 +74,7 @@ async def test_model_configuration_reports_but_never_returns_secret(
     assert response.status_code == 200
     assert response.json()["has_api_key"] is True
     assert secret not in response.text
+    assert embedding_secret not in response.text
     assert "openai_api_key" not in response.json()
 
 
