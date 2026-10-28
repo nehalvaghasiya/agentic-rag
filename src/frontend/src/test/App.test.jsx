@@ -106,4 +106,22 @@ describe("frontend component harness", () => {
     expect(await screen.findByText(/files: This field has an invalid value\./)).toHaveTextContent(`Reference: ${correlationIdFixture}`);
     expect(screen.getByRole("button", { name: "Create", exact: true })).toBeEnabled();
   });
+
+  it("uses the server embedding default and accepts a custom router model", async () => {
+    const onCreate = vi.fn().mockResolvedValue({});
+    const { user, container } = renderWithAppProviders(
+      <CreateKnowledgeBaseModal open onCreate={onCreate} onClose={() => {}} />
+    );
+    await user.upload(container.querySelector('input[type="file"]'), new File(["data"], "notes.txt", { type: "text/plain" }));
+    await user.click(screen.getByRole("button", { name: /Advanced Settings/ }));
+    expect(screen.getByRole("combobox", { name: "Embedding Model" })).toHaveValue("");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Embedding Model" }), "custom");
+    expect(screen.getByRole("button", { name: "Create", exact: true })).toBeDisabled();
+    await user.type(screen.getByRole("textbox", { name: "Custom embedding model" }), "openrouter/qwen/qwen3-embedding-8b");
+    await user.click(screen.getByRole("button", { name: "Create", exact: true }));
+    expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({
+      embeddingModel: "openrouter/qwen/qwen3-embedding-8b",
+      name: "notes",
+    }));
+  });
 });
