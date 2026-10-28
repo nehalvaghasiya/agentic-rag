@@ -206,11 +206,11 @@ export async function getModelConfig() {
 export type CreateKnowledgeBaseParams = { name: string; embeddingModel?: string; files: File[] };
 export async function createKnowledgeBase({ name, embeddingModel, files }: CreateKnowledgeBaseParams) {
   const body: RequestBody<"/api/kb", "post"> = {
-    name, embedding_model: embeddingModel || "sentence-transformers/all-MiniLM-L6-v2", files,
+    name, embedding_model: embeddingModel || undefined, files,
   };
   const form = new FormData();
   form.append("name", body.name);
-  form.append("embedding_model", body.embedding_model);
+  if (body.embedding_model) form.append("embedding_model", body.embedding_model);
   for (const file of body.files) form.append("files", file);
   return requestJson(endpoints.createKnowledgeBase, { body: form });
 }
