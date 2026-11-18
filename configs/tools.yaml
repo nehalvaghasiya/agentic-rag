@@ -1,0 +1,4 @@
+read_only_default: true
+max_tool_calls: 6
+default_timeout_seconds: 8
+write_requires_approval: true

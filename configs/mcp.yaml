@@ -1,0 +1,2 @@
+# Remote MCP disabled in demo. Configure an allowlisted and authenticated server.
+servers: []
