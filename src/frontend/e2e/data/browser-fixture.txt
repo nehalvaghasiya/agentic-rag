@@ -1,1 +1,0 @@
-The browser harness stores every test run in a disposable directory.
