@@ -1,0 +1,14 @@
+suite: demo
+provider: fake
+modes: [baseline, advanced, agentic]
+repetitions: 1
+seed: 42
+judges:
+  enabled: false
+metrics:
+  retrieval: [precision, recall, hit_rate, mrr, map, ndcg]
+  generation: [token_f1, abstention_accuracy, citation_validity]
+  agent: [task_success, tool_selection_f1, tool_budget_compliance]
+  system: [latency_ms, cost_usd_per_request]
+report:
+  directory: reports/demo

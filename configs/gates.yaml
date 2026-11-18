@@ -1,0 +1,3 @@
+# Example smoke gates only; tune against representative real-model benchmarks.
+min_task_success: 0.0
+max_unauthorized_access: 0

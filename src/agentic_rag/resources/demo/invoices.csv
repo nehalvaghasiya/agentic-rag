@@ -1,0 +1,4 @@
+tenant_id,invoice,amount
+demo-tenant,A001,120
+demo-tenant,A002,80
+other-tenant,B001,9999
