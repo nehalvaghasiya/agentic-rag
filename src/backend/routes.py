@@ -97,19 +97,19 @@ async def list_knowledge_bases(kb_store: KBStoreDep) -> list[KnowledgeBase]:
 @router.post("/kb", response_model=KnowledgeBase)
 async def create_knowledge_base(
     name: Annotated[str, Form()],
-    embedding_model: Annotated[str, Form()],
     files: Annotated[list[UploadFile], File()],
     settings: SettingsDep,
     kb_store: KBStoreDep,
+    embedding_model: Annotated[str | None, Form()] = None,
 ) -> KnowledgeBase:
     """Create a new knowledge base with uploaded files.
 
     This endpoint accepts multipart form data with:
     - name: Knowledge base name
-    - embedding_model: Model to use for embeddings
+    - embedding_model: Optional model ID; defaults to the server's EMBEDDING_MODEL
     - files: One or more files to index
     """
-    return await kb_store.create(name, embedding_model, files, settings)
+    return await kb_store.create(name, embedding_model or settings.embedding_model, files, settings)
 
 
 @router.get("/kb/{kb_id}")

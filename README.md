@@ -37,8 +37,8 @@ Prereqs:
 
 - Python 3.11+
 
-Install the locked runtime dependencies with `uv`. The UI defaults to local
-Sentence Transformers embeddings, which require the `local-embeddings` extra:
+Install the locked runtime dependencies with `uv`. The default server embedding
+model uses local Sentence Transformers, which require the `local-embeddings` extra:
 
 ```bash
 uv sync --locked --no-default-groups --extra local-embeddings
@@ -50,8 +50,8 @@ For hosted embeddings or deterministic development, install the core runtime:
 uv sync --locked --no-default-groups
 ```
 
-For hosted embeddings, set `OPENAI_API_KEY` and select a `text-embedding-*` model
-when creating a knowledge base. For offline deterministic development, set
+For hosted embeddings, configure the provider and model as described below; no
+local embedding extra is needed. For offline deterministic development, set
 `MODE=deterministic` before starting the server. Core installs exclude PyTorch,
 Transformers, and Sentence Transformers. Local models download weights on first
 use; those model files are separate from the Python dependency lockfile.
@@ -181,6 +181,47 @@ Common variables:
 - `OPENAI_MODEL` (optional)
 - `OPENAI_BASE_URL` (optional)
 
+### OpenAI-compatible embeddings (including OmniRouter)
+
+Chat and embeddings can use the same router or separate endpoints and credentials.
+For the OmniRouter endpoint at `http://localhost:20128/v1`, configure `.env` with:
+
+```dotenv
+OPENAI_MODEL=auto
+OPENAI_BASE_URL=http://localhost:20128/v1
+OPENAI_API_KEY=YOUR_NEW_API_KEY
+
+EMBEDDING_PROVIDER=openai
+EMBEDDING_MODEL=openrouter/qwen/qwen3-embedding-8b
+# Optional: defaults to OPENAI_BASE_URL when omitted or empty.
+EMBEDDING_BASE_URL=http://localhost:20128/v1
+# Optional: defaults to OPENAI_API_KEY when omitted or empty.
+EMBEDDING_API_KEY=
+```
+
+Replace the API key placeholder with your router's key and restart the backend.
+In Create Knowledge Base, leave **Embedding Model** on **Use server default** to
+use `EMBEDDING_MODEL`, or select **Custom model…** and enter another model ID
+served by the configured provider. The chat model (`auto` here) is independent of
+the embedding model. Chat model overrides do not change KB embedding credentials.
+
+`EMBEDDING_PROVIDER=openai` accepts arbitrary model IDs and sends plain text to
+the endpoint's `/embeddings` route, requesting float vectors. Set the base URL
+to the API root, including `/v1` when required, without the `/embeddings` suffix.
+An empty chat API key is allowed at startup; hosted embeddings still require
+either `EMBEDDING_API_KEY` or `OPENAI_API_KEY` to be set.
+
+The default `EMBEDDING_PROVIDER=auto` preserves the original selection:
+`text-embedding-*` models use the OpenAI-compatible client, and other model names
+use local HuggingFace embeddings. Set `EMBEDDING_PROVIDER=huggingface` to always
+use local models, and install the `local-embeddings` extra. `MODE=deterministic`
+continues to use offline hash embeddings regardless of provider configuration.
+
+Each KB retains its chosen embedding model for queries, even if the server's
+default model changes. Keep its provider configuration pointing to the same
+embedding service; changing an existing KB's embedding model or vector space
+requires recreating that KB from its source documents.
+
 Notes:
 
 - The backend supports a **deterministic mode** (`Settings.mode = "deterministic"`) which disables LLM calls and uses hash embeddings. This is useful for tests and offline development.
@@ -196,7 +237,7 @@ Base URL: `http://127.0.0.1:8001`
 - `GET /api/models/config` — current model config (no API key)
 - `GET /api/kb` — list knowledge bases
 - `POST /api/kb` — create KB from uploaded files (multipart form)
-  - fields: `name`, `embedding_model`, `files[]`
+  - fields: `name`, optional `embedding_model` (defaults to `EMBEDDING_MODEL`), `files[]`
 - `POST /api/kb/{kb_id}/query/stream` — SSE stream for KB query
   - request body: `{ "question": "...", "model_config_override": {"api_key": ..., "model": ..., "base_url": ...} }`
   - SSE events: `step`, `sources`, `token`, `complete`, `error`

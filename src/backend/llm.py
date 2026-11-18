@@ -52,7 +52,7 @@ def get_embedder(model_name: str, settings: Settings) -> Embedder:
     """Get an embedder for the given model name.
 
     Args:
-        model_name: Model name (e.g., "text-embedding-3-small" or HuggingFace model).
+        model_name: Model ID accepted by the configured embedding provider.
         settings: Application settings.
 
     Returns:
@@ -63,9 +63,13 @@ def get_embedder(model_name: str, settings: Settings) -> Embedder:
 
         return HashEmbedder()
 
-    # OpenAI embeddings
-    if model_name.startswith("text-embedding-"):
-        if not settings.openai_api_key:
+    # Explicit provider selection supports arbitrary OpenAI-compatible model IDs.
+    # Auto retains the original OpenAI/HuggingFace model-name routing.
+    if settings.embedding_provider == "openai" or (
+        settings.embedding_provider == "auto" and model_name.startswith("text-embedding-")
+    ):
+        api_key = settings.embedding_api_key or settings.openai_api_key
+        if not api_key:
             from backend.errors import ApplicationError
             from backend.models import ErrorCode
 
@@ -74,8 +78,13 @@ def get_embedder(model_name: str, settings: Settings) -> Embedder:
         from langchain_openai import OpenAIEmbeddings
 
         return OpenAIEmbeddings(
-            api_key=settings.openai_api_key,
+            api_key=api_key,
             model=model_name,
+            base_url=settings.embedding_base_url or settings.openai_base_url,
+            # Let the endpoint tokenize its own model, rather than sending OpenAI
+            # token IDs to providers using another tokenizer.
+            check_embedding_ctx_length=False,
+            model_kwargs={"encoding_format": "float"},
         )
 
     # HuggingFace embeddings (default)
