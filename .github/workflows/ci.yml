@@ -1,0 +1,125 @@
+name: Agentic RAG CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: rag_test
+          POSTGRES_USER: rag_owner
+          POSTGRES_PASSWORD: ci-admin-password
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U rag_owner -d rag_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      AGENTIC_RAG_DATABASE_ADMIN_URL: postgresql://rag_owner:ci-admin-password@127.0.0.1:5432/rag_test
+      AGENTIC_RAG_DATABASE_URL: postgresql://rag_app:ci-app-password@127.0.0.1:5432/rag_test
+      AGENTIC_RAG_TEST_DATABASE_URL: postgresql://rag_app:ci-app-password@127.0.0.1:5432/rag_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve pinned environment
+        run: uv sync --locked --group dev
+      - name: Migrate real PostgreSQL with a restricted application role
+        run: uv run agentic-rag migrate
+      - name: Check formatting and linting
+        run: uv run ruff check src tests scripts && uv run ruff format --check src tests scripts
+      - name: Static type checks
+        run: uv run mypy src/agentic_rag
+      - name: Tests with coverage
+        run: uv run pytest -q --cov=agentic_rag --cov-report=term-missing --junitxml=reports/pytest.xml
+      - name: Verify API contracts
+        run: uv run python scripts/export.py && git diff --exit-code -- contracts/openapi.json
+      - name: Deterministic smoke and evaluations
+        run: uv run agentic-rag demo --config configs/demo.yaml && uv run agentic-rag eval --config configs/demo.yaml && uv run python scripts/metric_dryrun.py
+      - name: Package wheel
+        run: uv build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-report
+          path: |
+            reports/
+            dist/
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Check dependency advisories and local security patch
+        run: npm audit && npm run test:security
+      - run: npm run generate:api-types && git diff --exit-code -- src/api/generated/chat.d.ts
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test -- --run
+      - run: npm run build
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: rag_test
+          POSTGRES_USER: rag_owner
+          POSTGRES_PASSWORD: ci-admin-password
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U rag_owner -d rag_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      AGENTIC_RAG_DATABASE_ADMIN_URL: postgresql://rag_owner:ci-admin-password@127.0.0.1:5432/rag_test
+      AGENTIC_RAG_DATABASE_URL: postgresql://rag_app:ci-app-password@127.0.0.1:5432/rag_test
+      AGENTIC_RAG_TEST_DATABASE_URL: postgresql://rag_app:ci-app-password@127.0.0.1:5432/rag_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --locked --group dev
+      - run: uv run agentic-rag migrate
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps --only-shell chromium
+        working-directory: frontend
+      - run: npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-report
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/

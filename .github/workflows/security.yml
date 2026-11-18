@@ -1,0 +1,24 @@
+name: Dependency and secret checks
+on:
+  pull_request:
+  schedule:
+    - cron: '20 6 * * 2'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --group dev
+      - run: uv run python -m compileall -q src
+      - name: Check committed secret patterns
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          forbidden = ("-----BEGIN PRIVATE KEY-----", "sk-proj-", "ghp_")
+          for p in Path('src').rglob('*.py'):
+              if any(s in p.read_text() for s in forbidden):
+                  raise SystemExit(f'Credential-like literal in {p}')
+          PY

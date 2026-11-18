@@ -1,0 +1,19 @@
+name: Deterministic RAG evaluation
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --group test
+      - run: uv run agentic-rag eval --config configs/demo.yaml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-evaluation
+          path: reports/demo/
