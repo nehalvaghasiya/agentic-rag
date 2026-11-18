@@ -1,0 +1,20 @@
+{
+  "name": "@agentic-rag/picomatch",
+  "version": "4.0.7",
+  "private": true,
+  "description": "Local security-patched Picomatch 4.0.7; see README.md for CVE-2026-112366 provenance.",
+  "license": "MIT",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "main": "index.js",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=12"
+  },
+  "files": [
+    "index.js",
+    "posix.js",
+    "lib",
+    "LICENSE",
+    "README.md"
+  ]
+}
