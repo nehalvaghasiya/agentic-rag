@@ -1,193 +1,79 @@
-[project.urls]
-Repository = "https://github.com//rag"
-# Homepage = "https://..."
-# Documentation = "https://..."
+[build-system]
+requires = ["setuptools>=75", "wheel>=0.44"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "rag"
-description = "Agentic-rag"
-authors = [
-    { name="Nehal Vaghasiya", email="nehal.vaghasiya777@gmail.com"},
-]
+name = "agentic-rag"
+version = "0.2.0"
+description = "Bounded agentic RAG with typed tools, evaluation, citations and tenant-safe retrieval"
 readme = "README.md"
-license = "MIT"
-requires-python = ">=3.11,<4.0"
-dynamic = ["version"]
-
-# https://pypi.org/classifiers/
-# Adjust as needed:
-classifiers = [
-    # Adjust as needed:
-    "Development Status :: 4 - Beta",
-    # "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Typing :: Typed",
-    # Include this to avoid accidentally publishing to PyPI:
-    # "Private :: Do Not Upload",
-]
-
-
-# Main dependencies
+requires-python = ">=3.11"
+license = {text = "MIT"}
 dependencies = [
-    "fastapi>=0.135.1,<1.0",
-    "langchain-community>=0.4.1",
-    "langchain-core>=1.2.4",
-    "langchain-openai>=1.1.6",
-    "langgraph>=1.0.5",
-    "numpy>=2.3.5,<3.0",
-    "openai>=2.14.0,<3.0",
-    "pydantic>=2.12.5,<3.0",
-    "pydantic-settings>=2.12.0",
-    "pypdf>=6.4.2",
-    "python-multipart>=0.0.21",
-    "uvicorn>=0.42.0,<1.0",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.30,<1",
+  "pydantic>=2.8,<3",
+  "python-multipart>=0.0.12",
+  "python-dotenv>=1,<2",
+  "httpx>=0.27,<1",
+  "PyYAML>=6,<7",
+  "numpy>=1.26,<3",
+  "pypdf>=5,<7",
+  "python-docx>=1.1,<2",
+  "PyJWT>=2.8,<3",
+  "prometheus-client>=0.20,<1",
+  "opentelemetry-api>=1.26,<2",
+  "opentelemetry-sdk>=1.26,<2",
+  "langgraph>=1.0,<2",
+  "mcp>=1.5,<2",
+  "psycopg[binary,pool]>=3.2,<4",
+  "pgvector>=0.4,<1",
+  "langgraph-checkpoint-postgres>=3,<5",
 ]
-
 
 [project.optional-dependencies]
-local-embeddings = [
-    "sentence-transformers>=5.2.0",
-]
+local = ["sentence-transformers>=3,<6"]
+hf = ["datasets>=3,<5"]
 
-
-# Dev dependencies
 [dependency-groups]
-test = [
-    "jsonschema>=4.26.0,<5",
-    "pytest>=8.3.5",
-    "pytest-asyncio>=1.2.0",
-]
+test = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "pytest-cov>=6,<8"]
 quality = [
-    "ruff>=0.11.9",
-    "codespell>=2.4.1",
-    "rich>=14.0.0",
-    "basedpyright>=1.29.1",
-    "funlog>=0.2.1",
+    "ruff>=0.11,<1",
+    "mypy>=1.15,<2",
+    "types-pyyaml>=6.0.12.20261113",
 ]
-hooks = [
-    "pre-commit>=4.4.0,<5",
-]
-dev = [
-    { include-group = "test" },
-    { include-group = "quality" },
-    { include-group = "hooks" },
-    "pytest-sugar>=1.0.0",
-]
+dev = [{include-group="test"}, {include-group="quality"}]
 
-# Build system
+[project.scripts]
+agentic-rag = "agentic_rag.cli:main"
 
-# Dynamic versioning from:
-# https://github.com/ninoseki/uv-dynamic-versioning/
+[tool.setuptools.packages.find]
+where = ["src"]
 
-[build-system]
-# Pin the complete build dependency graph; uv.lock covers project dependencies,
-# whereas PEP 517 resolves these separately in an isolated build environment.
-requires = [
-    "hatchling==1.28.0",
-    "uv-dynamic-versioning==0.13.0",
-    "dunamai==1.26.0",
-    "jinja2==3.1.6",
-    "markupsafe==3.0.3",
-    "packaging==25.0",
-    "pathspec==0.12.1",
-    "pluggy==1.6.0",
-    "tomlkit==0.13.3",
-    "trove-classifiers==2025.9.11.17",
-]
-build-backend = "hatchling.build"
+[tool.setuptools.package-data]
+agentic_rag = ["resources/demo/*", "resources/skills/*"]
 
-[tool.hatch.version]
-source = "uv-dynamic-versioning"
-# Note JSON schemas don't seem to be right for tool.hatch.version.source so
-# this may cause false warnings in IDEs.
-# https://github.com/ninoseki/uv-dynamic-versioning/issues/21
-
-[tool.uv-dynamic-versioning]
-vcs = "git"
-style = "pep440"
-bump = true
-# Fallback version when git is not available or no tags exist
-fallback-version = "0.1.0"
-
-[tool.hatch.build.targets.wheel]
-# The source location for the package.
-packages = ["src/backend"]
-
-
-# Settings
+[tool.setuptools.data-files]
+"share/agentic-rag/migrations" = ["infra/postgres/*.sql"]
 
 [tool.ruff]
-# Set as desired, typically 88 (black standard) or 100 (wide).
 line-length = 100
+src = ["src", "tests", "scripts"]
 
 [tool.ruff.lint]
-select = [
-    # See: https://docs.astral.sh/ruff/rules/
-    # Basic list from: https://docs.astral.sh/ruff/linter/#rule-selection
-    "E", # https://docs.astral.sh/ruff/rules/#error-e
-    "F", # https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "UP", # https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "B", # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "I", # https://docs.astral.sh/ruff/rules/#isort-i
-    # Other possibilities:
-    # "D" # https://docs.astral.sh/ruff/rules/#pydocstyle-d
-    # "Q" # https://docs.astral.sh/ruff/rules/#flake8-quotes-q
-    # "COM" # https://docs.astral.sh/ruff/rules/#flake8-commas-com
-    # "SIM", # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
 
-]
-ignore = [
-    # Disable some rules that are overly pedantic. Add/remove as desired:
-    "E501", # https://docs.astral.sh/ruff/rules/line-too-long/
-    "E402", # https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file/
-    "E731", # https://docs.astral.sh/ruff/rules/lambda-assignment/
-    # We use both ruff formatter and linter so some rules should always be disabled.
-    # See: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
-    "W191", # https://docs.astral.sh/ruff/rules/tab-indentation/
-    "E111", # https://docs.astral.sh/ruff/rules/indentation-with-invalid-multiple/
-    "E114", # https://docs.astral.sh/ruff/rules/indentation-with-invalid-multiple-comment/
-    "E117", # https://docs.astral.sh/ruff/rules/over-indented/
-    "D206", # https://docs.astral.sh/ruff/rules/docstring-tab-indentation/
-    "D300", # https://docs.astral.sh/ruff/rules/triple-single-quotes/
-    "Q000", # https://docs.astral.sh/ruff/rules/bad-quotes-inline-string/
-    "Q001", # https://docs.astral.sh/ruff/rules/bad-quotes-multiline-string/
-    "Q002", # https://docs.astral.sh/ruff/rules/bad-quotes-docstring/
-    "Q003", # https://docs.astral.sh/ruff/rules/avoidable-escaped-quote/
-    "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/
-    "COM819", # https://docs.astral.sh/ruff/rules/prohibited-trailing-comma/
-    "ISC002", # https://docs.astral.sh/ruff/rules/multi-line-implicit-string-concatenation/
-]
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Header", "fastapi.Form"]
 
-[tool.basedpyright]
-include = ["src/backend", "devtools", "src/frontend/e2e/backend_fixture.py"]
-extraPaths = ["src"]
-pythonVersion = "3.11"
-typeCheckingMode = "standard"
-failOnWarnings = false
-
-[tool.codespell]
-# Add here as needed:
-# ignore-words-list = "foo,bar"
-# skip = "foo.py,bar.py"
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
 
 [tool.pytest.ini_options]
-addopts = [
-    "--strict-config",
-    "--strict-markers",
-]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-testpaths = [
-    "tests",
-]
-norecursedirs = ["smoke"]
-filterwarnings = []
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"

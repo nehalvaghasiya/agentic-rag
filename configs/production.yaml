@@ -1,0 +1,6 @@
+# PRODUCTION IS NOT YET SUPPORTED: server fails closed until Pg adapters are wired.
+environment: production
+store: postgres
+provider: openai
+model: gpt-4.1-mini
+embedding_model: text-embedding-3-small
