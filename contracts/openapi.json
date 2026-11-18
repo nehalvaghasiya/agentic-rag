@@ -1,9 +1,10 @@
 {
   "components": {
     "schemas": {
-      "Body_create_knowledge_base_api_kb_post": {
+      "ActivityData": {
+        "additionalProperties": true,
         "properties": {
-          "embedding_model": {
+          "activity_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -12,7 +13,265 @@
                 "type": "null"
               }
             ],
-            "title": "Embedding Model"
+            "title": "Activity Id"
+          },
+          "arguments": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arguments"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "execution_path": {
+            "anyOf": [
+              {
+                "enum": [
+                  "direct",
+                  "rag",
+                  "agentic"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Path"
+          },
+          "goals": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goals"
+          },
+          "layer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layer"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "origin_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Run Id"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Code"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "default": "",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "ActivityData",
+        "type": "object"
+      },
+      "ActivityEvent": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ActivityData"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "timestamp": {
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "started",
+              "context",
+              "route",
+              "cache",
+              "retrieval_started",
+              "retrieval",
+              "plan",
+              "agent_started",
+              "agent_finished",
+              "tool_started",
+              "tool_finished",
+              "tool_denied",
+              "generation",
+              "verification",
+              "budget",
+              "retry",
+              "escalation"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "run_id",
+          "timestamp",
+          "type",
+          "data"
+        ],
+        "title": "ActivityEvent",
+        "type": "object"
+      },
+      "AnswerVersion": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "status",
+          "created_at"
+        ],
+        "title": "AnswerVersion",
+        "type": "object"
+      },
+      "Body_create_kb_api_kb_post": {
+        "properties": {
+          "embedding_model": {
+            "default": "demo",
+            "title": "Embedding Model",
+            "type": "string"
           },
           "files": {
             "items": {
@@ -31,20 +290,90 @@
           "name",
           "files"
         ],
-        "title": "Body_create_knowledge_base_api_kb_post",
+        "title": "Body_create_kb_api_kb_post",
+        "type": "object"
+      },
+      "Body_update_doc_api_v2_documents__doc_id__put": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_update_doc_api_v2_documents__doc_id__put",
+        "type": "object"
+      },
+      "Body_upload_api_v2_kb__kb_id__documents_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_upload_api_v2_kb__kb_id__documents_post",
         "type": "object"
       },
       "ChatMessage": {
-        "additionalProperties": false,
-        "description": "Untrusted dialogue; privileged message roles are server-owned.",
         "properties": {
+          "answer_status": {
+            "default": "answered",
+            "enum": [
+              "answered",
+              "clarification",
+              "insufficient_evidence",
+              "citation_error",
+              "indexing",
+              "no_documents",
+              "coverage_limit",
+              "verification_failed"
+            ],
+            "title": "Answer Status",
+            "type": "string"
+          },
           "content": {
-            "description": "Nonblank content; original text is preserved",
-            "maxLength": 8000,
-            "minLength": 1,
-            "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
             "title": "Content",
             "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "parent_user_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent User Message Id"
+          },
+          "pending_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending Run Id"
           },
           "role": {
             "enum": [
@@ -53,375 +382,84 @@
             ],
             "title": "Role",
             "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "default": "completed",
+            "title": "Status",
+            "type": "string"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/AnswerVersion"
+            },
+            "title": "Versions",
+            "type": "array"
           }
         },
         "required": [
+          "id",
           "role",
-          "content"
+          "content",
+          "created_at"
         ],
         "title": "ChatMessage",
         "type": "object"
       },
-      "ChatRequest": {
-        "additionalProperties": false,
-        "description": "One bounded conversation contract for regular and streaming chat.",
+      "Citation": {
         "properties": {
-          "messages": {
-            "description": "Chat history ending in a user message; at most 64,000 Unicode code points across all message content. Order and text are preserved.",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessage"
-            },
-            "maxItems": 50,
-            "minItems": 1,
-            "title": "Messages",
-            "type": "array"
+          "available": {
+            "default": true,
+            "title": "Available",
+            "type": "boolean"
           },
-          "model_config_override": {
+          "document_id": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ModelConfig"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Optional model config override"
-          }
-        },
-        "required": [
-          "messages"
-        ],
-        "title": "ChatRequest",
-        "type": "object"
-      },
-      "ChatResponse": {
-        "description": "Non-streaming chat response.",
-        "properties": {
-          "answer": {
-            "description": "Final assistant answer",
-            "title": "Answer",
+            "title": "Document Id"
+          },
+          "excerpt": {
+            "default": "",
+            "title": "Excerpt",
             "type": "string"
-          }
-        },
-        "required": [
-          "answer"
-        ],
-        "title": "ChatResponse",
-        "type": "object"
-      },
-      "CompleteEvent": {
-        "description": "Completion event with final answer.",
-        "properties": {
-          "answer": {
-            "title": "Answer",
-            "type": "string"
-          }
-        },
-        "required": [
-          "answer"
-        ],
-        "title": "CompleteEvent",
-        "type": "object"
-      },
-      "CompleteFrame": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CompleteEvent"
-          },
-          "type": {
-            "const": "complete",
-            "default": "complete",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "data"
-        ],
-        "title": "CompleteFrame",
-        "type": "object"
-      },
-      "DocumentMeta": {
-        "description": "Metadata for an uploaded document.",
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "size": {
-            "title": "Size",
-            "type": "integer"
-          },
-          "type": {
-            "title": "Type",
-            "type": "string"
-          },
-          "uploaded_at": {
-            "format": "date-time",
-            "title": "Uploaded At",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "type",
-          "size",
-          "uploaded_at"
-        ],
-        "title": "DocumentMeta",
-        "type": "object"
-      },
-      "ErrorCode": {
-        "description": "Stable public failure categories shared by HTTP and execution events.",
-        "enum": [
-          "BAD_REQUEST",
-          "NOT_FOUND",
-          "METHOD_NOT_ALLOWED",
-          "CONFLICT",
-          "PAYLOAD_TOO_LARGE",
-          "VALIDATION_ERROR",
-          "RATE_LIMITED",
-          "QUOTA_EXCEEDED",
-          "MODEL_NOT_CONFIGURED",
-          "SERVICE_UNAVAILABLE",
-          "PROVIDER_AUTH_ERROR",
-          "PROVIDER_REQUEST_ERROR",
-          "PROVIDER_UNAVAILABLE",
-          "PROVIDER_TIMEOUT",
-          "PROVIDER_ERROR",
-          "INTERNAL_ERROR",
-          "HTTP_ERROR"
-        ],
-        "title": "ErrorCode",
-        "type": "string"
-      },
-      "ErrorEnvelope": {
-        "additionalProperties": false,
-        "description": "Canonical HTTP error body and terminal SSE error data.",
-        "properties": {
-          "error": {
-            "$ref": "#/components/schemas/PublicError"
-          }
-        },
-        "required": [
-          "error"
-        ],
-        "title": "ErrorEnvelope",
-        "type": "object"
-      },
-      "ErrorEvent": {
-        "additionalProperties": false,
-        "description": "Terminal execution failure; serialized identically to HTTP errors.",
-        "properties": {
-          "error": {
-            "$ref": "#/components/schemas/PublicError"
-          }
-        },
-        "required": [
-          "error"
-        ],
-        "title": "ErrorEvent",
-        "type": "object"
-      },
-      "ErrorFrame": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ErrorEvent"
-          },
-          "type": {
-            "const": "error",
-            "default": "error",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "data"
-        ],
-        "title": "ErrorFrame",
-        "type": "object"
-      },
-      "ExecutionEvent": {
-        "discriminator": {
-          "mapping": {
-            "complete": "#/components/schemas/CompleteFrame",
-            "error": "#/components/schemas/ErrorFrame",
-            "sources": "#/components/schemas/SourcesFrame",
-            "step": "#/components/schemas/StepFrame",
-            "token": "#/components/schemas/TokenFrame"
-          },
-          "propertyName": "type"
-        },
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/StepFrame"
-          },
-          {
-            "$ref": "#/components/schemas/TokenFrame"
-          },
-          {
-            "$ref": "#/components/schemas/SourcesFrame"
-          },
-          {
-            "$ref": "#/components/schemas/CompleteFrame"
-          },
-          {
-            "$ref": "#/components/schemas/ErrorFrame"
-          }
-        ]
-      },
-      "HealthResponse": {
-        "description": "Health check response.",
-        "properties": {
-          "status": {
-            "default": "ok",
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "title": "HealthResponse",
-        "type": "object"
-      },
-      "KnowledgeBase": {
-        "description": "Knowledge base summary for API responses.",
-        "properties": {
-          "chunking_strategy": {
-            "default": "Recursive (800/120)",
-            "title": "Chunking Strategy",
-            "type": "string"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "documents": {
-            "items": {
-              "$ref": "#/components/schemas/DocumentMeta"
-            },
-            "title": "Documents",
-            "type": "array"
-          },
-          "embedding_model": {
-            "title": "Embedding Model",
-            "type": "string"
-          },
-          "file_count": {
-            "title": "File Count",
-            "type": "integer"
           },
           "id": {
             "title": "Id",
             "type": "string"
           },
-          "last_modified": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+          "kind": {
+            "default": "document",
+            "enum": [
+              "document",
+              "tool"
             ],
-            "title": "Last Modified"
-          },
-          "name": {
-            "title": "Name",
+            "title": "Kind",
             "type": "string"
           },
-          "ranking_strategy": {
-            "default": "Hybrid",
-            "title": "Ranking Strategy",
-            "type": "string"
-          },
-          "total_size": {
-            "title": "Total Size",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "embedding_model",
-          "created_at",
-          "file_count",
-          "total_size",
-          "documents",
-          "chunking_strategy",
-          "ranking_strategy",
-          "last_modified"
-        ],
-        "title": "KnowledgeBase",
-        "type": "object"
-      },
-      "ModelConfig": {
-        "additionalProperties": false,
-        "description": "LLM model configuration for API requests.",
-        "properties": {
-          "api_key": {
-            "anyOf": [
-              {
-                "maxLength": 4096,
-                "minLength": 1,
-                "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "API key (overrides env)",
-            "title": "Api Key"
-          },
-          "base_url": {
-            "anyOf": [
-              {
-                "maxLength": 2048,
-                "minLength": 1,
-                "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "API base URL (overrides env)",
-            "title": "Base Url"
-          },
-          "model": {
-            "anyOf": [
-              {
-                "maxLength": 256,
-                "minLength": 1,
-                "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Model name (overrides env)",
-            "title": "Model"
-          }
-        },
-        "title": "ModelConfig",
-        "type": "object"
-      },
-      "ModelConfigResponse": {
-        "description": "Response with current model configuration (without exposing secrets).",
-        "properties": {
-          "base_url": {
+          "observed_at": {
             "anyOf": [
               {
                 "type": "string"
@@ -430,154 +468,7 @@
                 "type": "null"
               }
             ],
-            "description": "Current base URL",
-            "title": "Base Url"
-          },
-          "has_api_key": {
-            "description": "Whether API key is configured",
-            "title": "Has Api Key",
-            "type": "boolean"
-          },
-          "model": {
-            "description": "Current model name",
-            "title": "Model",
-            "type": "string"
-          }
-        },
-        "required": [
-          "model",
-          "base_url",
-          "has_api_key"
-        ],
-        "title": "ModelConfigResponse",
-        "type": "object"
-      },
-      "PublicError": {
-        "additionalProperties": false,
-        "description": "Safe failure information. Retryability is advisory, not replay permission.",
-        "properties": {
-          "code": {
-            "$ref": "#/components/schemas/ErrorCode"
-          },
-          "correlation_id": {
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-            "title": "Correlation Id",
-            "type": "string"
-          },
-          "details": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/ValidationIssue"
-                },
-                "maxItems": 20,
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Details"
-          },
-          "message": {
-            "maxLength": 512,
-            "minLength": 1,
-            "title": "Message",
-            "type": "string"
-          },
-          "retryable": {
-            "title": "Retryable",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "code",
-          "message",
-          "retryable",
-          "correlation_id"
-        ],
-        "title": "PublicError",
-        "type": "object"
-      },
-      "QueryRequest": {
-        "additionalProperties": false,
-        "description": "Request to query a knowledge base.",
-        "properties": {
-          "model_config_override": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ModelConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Optional model config override"
-          },
-          "question": {
-            "description": "Nonblank question; original text is preserved",
-            "maxLength": 8000,
-            "minLength": 1,
-            "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]",
-            "title": "Question",
-            "type": "string"
-          }
-        },
-        "required": [
-          "question"
-        ],
-        "title": "QueryRequest",
-        "type": "object"
-      },
-      "QueryResponse": {
-        "description": "Non-streaming query response for a knowledge base.",
-        "properties": {
-          "answer": {
-            "description": "Final answer",
-            "title": "Answer",
-            "type": "string"
-          },
-          "sources": {
-            "description": "Retrieved sources",
-            "items": {
-              "$ref": "#/components/schemas/Source"
-            },
-            "title": "Sources",
-            "type": "array"
-          }
-        },
-        "required": [
-          "answer",
-          "sources"
-        ],
-        "title": "QueryResponse",
-        "type": "object"
-      },
-      "Source": {
-        "description": "A source citation from retrieved documents.",
-        "properties": {
-          "chunk": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Chunk index",
-            "title": "Chunk"
-          },
-          "file_name": {
-            "description": "Source file name",
-            "title": "File Name",
-            "type": "string"
-          },
-          "metadata": {
-            "additionalProperties": true,
-            "description": "Additional metadata",
-            "title": "Metadata",
-            "type": "object"
+            "title": "Observed At"
           },
           "page": {
             "anyOf": [
@@ -588,133 +479,330 @@
                 "type": "null"
               }
             ],
-            "description": "Page number (1-indexed, for PDFs)",
             "title": "Page"
           },
-          "score": {
+          "section": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Similarity score (0-100%)",
-            "title": "Score"
-          },
-          "snippet": {
-            "description": "Text snippet from the source",
-            "title": "Snippet",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file_name",
-          "page",
-          "chunk",
-          "snippet",
-          "score",
-          "metadata"
-        ],
-        "title": "Source",
-        "type": "object"
-      },
-      "SourcesEvent": {
-        "description": "Sources citation event.",
-        "properties": {
-          "sources": {
-            "items": {
-              "$ref": "#/components/schemas/Source"
-            },
-            "title": "Sources",
-            "type": "array"
-          }
-        },
-        "required": [
-          "sources"
-        ],
-        "title": "SourcesEvent",
-        "type": "object"
-      },
-      "SourcesFrame": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/SourcesEvent"
-          },
-          "type": {
-            "const": "sources",
-            "default": "sources",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "data"
-        ],
-        "title": "SourcesFrame",
-        "type": "object"
-      },
-      "StepEvent": {
-        "description": "A reasoning step event.",
-        "properties": {
-          "description": {
-            "default": "",
-            "title": "Description",
-            "type": "string"
-          },
-          "details": {
-            "additionalProperties": true,
-            "title": "Details",
-            "type": "object"
+            "title": "Section"
           },
           "title": {
             "title": "Title",
             "type": "string"
           },
-          "type": {
-            "enum": [
-              "analyzing",
-              "rewriting",
-              "searching",
-              "grading",
-              "generating"
+          "tool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Type",
-            "type": "string"
+            "title": "Tool"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
           }
         },
         "required": [
-          "type",
-          "title",
-          "description",
-          "details"
+          "id",
+          "title"
         ],
-        "title": "StepEvent",
+        "title": "Citation",
         "type": "object"
       },
-      "StepFrame": {
+      "CompleteData": {
+        "properties": {
+          "answer": {
+            "default": "",
+            "title": "Answer",
+            "type": "string"
+          },
+          "answer_status": {
+            "default": "answered",
+            "enum": [
+              "answered",
+              "clarification",
+              "insufficient_evidence",
+              "citation_error",
+              "indexing",
+              "no_documents",
+              "coverage_limit",
+              "verification_failed"
+            ],
+            "title": "Answer Status",
+            "type": "string"
+          },
+          "assistant_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assistant Message Id"
+          },
+          "citations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/SourceCoverage"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "evidence_count": {
+            "default": 0,
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "execution_path": {
+            "default": "direct",
+            "enum": [
+              "direct",
+              "rag",
+              "agentic"
+            ],
+            "title": "Execution Path",
+            "type": "string"
+          },
+          "grounding": {
+            "default": "model",
+            "title": "Grounding",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "latency_ms": {
+            "default": 0,
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "model": {
+            "default": "",
+            "title": "Model",
+            "type": "string"
+          },
+          "origin_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Run Id"
+          },
+          "regeneration_of_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regeneration Of Run Id"
+          },
+          "requested_mode": {
+            "title": "Requested Mode",
+            "type": "string"
+          },
+          "requested_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Model Id"
+          },
+          "route_reason": {
+            "default": "",
+            "title": "Route Reason",
+            "type": "string"
+          },
+          "served_from_cache": {
+            "default": false,
+            "title": "Served From Cache",
+            "type": "boolean"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "steps": {
+            "default": 0,
+            "title": "Steps",
+            "type": "integer"
+          },
+          "supported": {
+            "default": false,
+            "title": "Supported",
+            "type": "boolean"
+          },
+          "tool_calls": {
+            "default": 0,
+            "title": "Tool Calls",
+            "type": "integer"
+          },
+          "usage": {
+            "additionalProperties": true,
+            "title": "Usage",
+            "type": "object"
+          },
+          "user_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Message Id"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "mode",
+          "requested_mode"
+        ],
+        "title": "CompleteData",
+        "type": "object"
+      },
+      "CompleteEvent": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/StepEvent"
+            "$ref": "#/components/schemas/CompleteData"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "timestamp": {
+            "title": "Timestamp",
+            "type": "string"
           },
           "type": {
-            "const": "step",
-            "default": "step",
+            "const": "complete",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
+          "id",
+          "run_id",
+          "timestamp",
           "type",
           "data"
         ],
-        "title": "StepFrame",
+        "title": "CompleteEvent",
         "type": "object"
       },
-      "TokenEvent": {
-        "description": "A token streaming event.",
+      "ConsentBody": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "ConsentBody",
+        "type": "object"
+      },
+      "CreateKb": {
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateKb",
+        "type": "object"
+      },
+      "DecisionBody": {
+        "properties": {
+          "approved": {
+            "title": "Approved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "approved"
+        ],
+        "title": "DecisionBody",
+        "type": "object"
+      },
+      "DeltaData": {
         "properties": {
           "token": {
             "title": "Token",
@@ -724,75 +812,996 @@
         "required": [
           "token"
         ],
-        "title": "TokenEvent",
+        "title": "DeltaData",
         "type": "object"
       },
-      "TokenFrame": {
+      "DeltaEvent": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/TokenEvent"
+            "$ref": "#/components/schemas/DeltaData"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "timestamp": {
+            "title": "Timestamp",
+            "type": "string"
           },
           "type": {
             "const": "token",
-            "default": "token",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
+          "id",
+          "run_id",
+          "timestamp",
           "type",
           "data"
         ],
-        "title": "TokenFrame",
+        "title": "DeltaEvent",
         "type": "object"
       },
-      "ValidationIssue": {
-        "additionalProperties": false,
-        "description": "A declared field path and controlled validation explanation; never input.",
+      "DocumentPreviewResponse": {
+        "properties": {
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "total_characters": {
+            "title": "Total Characters",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "document_id",
+          "version",
+          "title",
+          "offset",
+          "total_characters",
+          "sections"
+        ],
+        "title": "DocumentPreviewResponse",
+        "type": "object"
+      },
+      "DocumentResponse": {
+        "properties": {
+          "can_delete": {
+            "default": false,
+            "title": "Can Delete",
+            "type": "boolean"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "default": "",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "content_type",
+          "size",
+          "status",
+          "version",
+          "created_at"
+        ],
+        "title": "DocumentResponse",
+        "type": "object"
+      },
+      "ExecutionEnvelope": {
+        "discriminator": {
+          "mapping": {
+            "agent_finished": "#/components/schemas/ActivityEvent",
+            "agent_started": "#/components/schemas/ActivityEvent",
+            "budget": "#/components/schemas/ActivityEvent",
+            "cache": "#/components/schemas/ActivityEvent",
+            "cancelled": "#/components/schemas/FailureEvent",
+            "complete": "#/components/schemas/CompleteEvent",
+            "context": "#/components/schemas/ActivityEvent",
+            "error": "#/components/schemas/FailureEvent",
+            "escalation": "#/components/schemas/ActivityEvent",
+            "generation": "#/components/schemas/ActivityEvent",
+            "plan": "#/components/schemas/ActivityEvent",
+            "retrieval": "#/components/schemas/ActivityEvent",
+            "retrieval_started": "#/components/schemas/ActivityEvent",
+            "retry": "#/components/schemas/ActivityEvent",
+            "route": "#/components/schemas/ActivityEvent",
+            "started": "#/components/schemas/ActivityEvent",
+            "token": "#/components/schemas/DeltaEvent",
+            "tool_denied": "#/components/schemas/ActivityEvent",
+            "tool_finished": "#/components/schemas/ActivityEvent",
+            "tool_started": "#/components/schemas/ActivityEvent",
+            "verification": "#/components/schemas/ActivityEvent"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ActivityEvent"
+          },
+          {
+            "$ref": "#/components/schemas/DeltaEvent"
+          },
+          {
+            "$ref": "#/components/schemas/CompleteEvent"
+          },
+          {
+            "$ref": "#/components/schemas/FailureEvent"
+          }
+        ],
+        "title": "ExecutionEnvelope"
+      },
+      "FailureData": {
         "properties": {
           "code": {
-            "enum": [
-              "required",
-              "invalid_type",
-              "invalid_json",
-              "invalid_value"
-            ],
             "title": "Code",
             "type": "string"
           },
-          "field": {
-            "maxLength": 256,
-            "title": "Field",
+          "correlation_id": {
+            "title": "Correlation Id",
             "type": "string"
           },
           "message": {
-            "maxLength": 256,
-            "minLength": 1,
             "title": "Message",
+            "type": "string"
+          },
+          "retryable": {
+            "default": true,
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "correlation_id"
+        ],
+        "title": "FailureData",
+        "type": "object"
+      },
+      "FailureEvent": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FailureData"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "timestamp": {
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "error",
+              "cancelled"
+            ],
+            "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "field",
-          "code",
-          "message"
+          "id",
+          "run_id",
+          "timestamp",
+          "type",
+          "data"
         ],
-        "title": "ValidationIssue",
+        "title": "FailureEvent",
+        "type": "object"
+      },
+      "FeedbackBody": {
+        "properties": {
+          "correction": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correction"
+          },
+          "rating": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "FeedbackBody",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "KnowledgeBaseResponse": {
+        "properties": {
+          "can_delete": {
+            "default": false,
+            "title": "Can Delete",
+            "type": "boolean"
+          },
+          "created_at": {
+            "default": "",
+            "title": "Created At",
+            "type": "string"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentResponse"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "embedding_model": {
+            "title": "Embedding Model",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "embedding_model"
+        ],
+        "title": "KnowledgeBaseResponse",
+        "type": "object"
+      },
+      "LegacyQuery": {
+        "properties": {
+          "model_config_override": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Config Override"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "LegacyQuery",
+        "type": "object"
+      },
+      "PreviewSection": {
+        "properties": {
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "PreviewSection",
+        "type": "object"
+      },
+      "RegenerateRequest": {
+        "properties": {
+          "client_request_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Client Request Id",
+            "type": "string"
+          },
+          "expected_run_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Expected Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "client_request_id",
+          "expected_run_id"
+        ],
+        "title": "RegenerateRequest",
+        "type": "object"
+      },
+      "RunAccepted": {
+        "properties": {
+          "assistant_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assistant Message Id"
+          },
+          "events_url": {
+            "title": "Events Url",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "user_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Message Id"
+          }
+        },
+        "required": [
+          "run_id",
+          "status",
+          "events_url"
+        ],
+        "title": "RunAccepted",
+        "type": "object"
+      },
+      "RunRequest": {
+        "properties": {
+          "client_message_id": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Message Id"
+          },
+          "kb_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Kb Ids",
+            "type": "array"
+          },
+          "mode": {
+            "default": "auto",
+            "enum": [
+              "auto",
+              "direct",
+              "baseline",
+              "advanced",
+              "agentic"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "question": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "RunRequest",
+        "type": "object"
+      },
+      "RunResponse": {
+        "properties": {
+          "answer": {
+            "default": "",
+            "title": "Answer",
+            "type": "string"
+          },
+          "answer_status": {
+            "default": "answered",
+            "enum": [
+              "answered",
+              "clarification",
+              "insufficient_evidence",
+              "citation_error",
+              "indexing",
+              "no_documents",
+              "coverage_limit",
+              "verification_failed"
+            ],
+            "title": "Answer Status",
+            "type": "string"
+          },
+          "assistant_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assistant Message Id"
+          },
+          "citations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/SourceCoverage"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "evidence_count": {
+            "default": 0,
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "execution_path": {
+            "default": "direct",
+            "enum": [
+              "direct",
+              "rag",
+              "agentic"
+            ],
+            "title": "Execution Path",
+            "type": "string"
+          },
+          "grounding": {
+            "default": "model",
+            "title": "Grounding",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "latency_ms": {
+            "default": 0,
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "model": {
+            "default": "",
+            "title": "Model",
+            "type": "string"
+          },
+          "origin_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Run Id"
+          },
+          "regeneration_of_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regeneration Of Run Id"
+          },
+          "requested_mode": {
+            "title": "Requested Mode",
+            "type": "string"
+          },
+          "requested_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Model Id"
+          },
+          "route_reason": {
+            "default": "",
+            "title": "Route Reason",
+            "type": "string"
+          },
+          "served_from_cache": {
+            "default": false,
+            "title": "Served From Cache",
+            "type": "boolean"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "steps": {
+            "default": 0,
+            "title": "Steps",
+            "type": "integer"
+          },
+          "tool_calls": {
+            "default": 0,
+            "title": "Tool Calls",
+            "type": "integer"
+          },
+          "usage": {
+            "additionalProperties": true,
+            "title": "Usage",
+            "type": "object"
+          },
+          "user_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Message Id"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "mode",
+          "requested_mode"
+        ],
+        "title": "RunResponse",
+        "type": "object"
+      },
+      "SelectVersionRequest": {
+        "properties": {
+          "expected_run_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Expected Run Id",
+            "type": "string"
+          },
+          "run_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "expected_run_id"
+        ],
+        "title": "SelectVersionRequest",
+        "type": "object"
+      },
+      "SessionRequest": {
+        "properties": {
+          "kb_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Kb Ids",
+            "type": "array"
+          },
+          "title": {
+            "default": "New chat",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "SessionRequest",
+        "type": "object"
+      },
+      "SessionResponse": {
+        "properties": {
+          "active_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Run Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kb_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Kb Ids",
+            "type": "array"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          },
+          "summary_status": {
+            "default": "idle",
+            "enum": [
+              "idle",
+              "queued",
+              "running",
+              "completed",
+              "failed"
+            ],
+            "title": "Summary Status",
+            "type": "string"
+          },
+          "summary_through": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Through"
+          },
+          "title": {
+            "default": "New chat",
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "updated_at"
+        ],
+        "title": "SessionResponse",
+        "type": "object"
+      },
+      "SessionUpdate": {
+        "properties": {
+          "kb_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 8,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kb Ids"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "SessionUpdate",
+        "type": "object"
+      },
+      "SourceCoverage": {
+        "properties": {
+          "documents": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "read_chunks": {
+            "default": 0,
+            "title": "Read Chunks",
+            "type": "integer"
+          },
+          "strategy": {
+            "default": "none",
+            "enum": [
+              "none",
+              "lookup",
+              "full_document",
+              "map_reduce",
+              "partial"
+            ],
+            "title": "Strategy",
+            "type": "string"
+          },
+          "total_chunks": {
+            "default": 0,
+            "title": "Total Chunks",
+            "type": "integer"
+          }
+        },
+        "title": "SourceCoverage",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
         "type": "object"
       }
     }
   },
   "info": {
-    "description": "RAG-based question answering with streaming support. Failures use ErrorEnvelope with a stable code, safe message, advisory retryability and correlation_id. X-Correlation-ID identifies every application response. SSE execution failures use the same envelope in one terminal error event; HTTP 200 only opens the stream.",
-    "title": "Agentic RAG API",
-    "version": "2.0.0"
+    "title": "Advanced Agentic RAG",
+    "version": "0.2.0"
   },
   "openapi": "3.1.0",
   "paths": {
-    "/": {
-      "get": {
-        "description": "Root endpoint.",
-        "operationId": "root__get",
+    "/api/chat": {
+      "post": {
+        "operationId": "chat_api_chat_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Req",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -801,429 +1810,58 @@
                   "additionalProperties": {
                     "type": "string"
                   },
-                  "title": "Response Root  Get",
+                  "title": "Response Chat Api Chat Post",
                   "type": "object"
                 }
               }
             },
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Validation Error"
           }
         },
-        "summary": "Root"
-      }
-    },
-    "/api/chat": {
-      "post": {
-        "description": "General chat (non-streaming).\n\nThis endpoint exists as a fallback for environments that don't support SSE\nstreaming.",
-        "operationId": "chat_api_chat_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChatRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Chat"
+        "summary": "Chat",
+        "tags": [
+          "Legacy compatibility"
+        ]
       }
     },
     "/api/chat/stream": {
       "post": {
-        "description": "Direct chat without knowledge base (streaming).\n\nReturns Server-Sent Events (SSE) with:\n- step: Reasoning step updates\n- token: Streaming answer tokens\n- complete: Final complete event\n- error: Terminal ErrorEnvelope with the response's X-Correlation-ID\n\nAccepts optional model_config_override to use custom LLM settings.",
         "operationId": "chat_stream_api_chat_stream_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChatRequest"
+                "additionalProperties": true,
+                "title": "Req",
+                "type": "object"
               }
             }
           },
@@ -1232,631 +1870,132 @@
         "responses": {
           "200": {
             "content": {
-              "text/event-stream": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "SSE connection opened. A terminal complete event indicates success; a terminal error event carries ErrorEnvelope. No complete event follows an error."
-          },
-          "400": {
-            "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
+                "schema": {}
               }
             },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Successful Response"
           },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Validation Error"
           }
         },
         "summary": "Chat Stream",
-        "x-event-schema": {
-          "$ref": "#/components/schemas/ExecutionEvent"
-        }
+        "tags": [
+          "Legacy compatibility"
+        ]
       }
     },
     "/api/health": {
       "get": {
-        "description": "Health check endpoint.",
-        "operationId": "health_check_api_health_get",
+        "operationId": "health_api_health_get",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Api Health Get",
+                  "type": "object"
                 }
               }
             },
             "description": "Successful Response"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
           }
         },
-        "summary": "Health Check"
+        "summary": "Health",
+        "tags": [
+          "Legacy compatibility"
+        ]
       }
     },
     "/api/kb": {
       "get": {
-        "description": "List all knowledge bases.",
-        "operationId": "list_knowledge_bases_api_kb_get",
+        "operationId": "list_kbs_api_kb_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/KnowledgeBase"
+                    "additionalProperties": true,
+                    "type": "object"
                   },
-                  "title": "Response List Knowledge Bases Api Kb Get",
+                  "title": "Response List Kbs Api Kb Get",
                   "type": "array"
                 }
               }
             },
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Validation Error"
           }
         },
-        "summary": "List Knowledge Bases"
+        "summary": "List Kbs",
+        "tags": [
+          "Legacy compatibility"
+        ]
       },
       "post": {
-        "description": "Create a new knowledge base with uploaded files.\n\nThis endpoint accepts multipart form data with:\n- name: Knowledge base name\n- embedding_model: Optional model ID; defaults to the server's EMBEDDING_MODEL\n- files: One or more files to index",
-        "operationId": "create_knowledge_base_api_kb_post",
+        "operationId": "create_kb_api_kb_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_create_knowledge_base_api_kb_post"
+                "$ref": "#/components/schemas/Body_create_kb_api_kb_post"
               }
             }
           },
@@ -1867,207 +2006,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgeBase"
+                  "additionalProperties": true,
+                  "title": "Response Create Kb Api Kb Post",
+                  "type": "object"
                 }
               }
             },
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Validation Error"
           }
         },
-        "summary": "Create Knowledge Base"
+        "summary": "Create Kb",
+        "tags": [
+          "Legacy compatibility"
+        ]
       }
     },
     "/api/kb/{kb_id}": {
       "get": {
-        "description": "Get details for a specific knowledge base.",
-        "operationId": "get_knowledge_base_api_kb__kb_id__get",
+        "operationId": "get_kb_api_kb__kb_id__get",
         "parameters": [
           {
             "in": "path",
@@ -2077,6 +2043,22 @@
               "title": "Kb Id",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -2084,207 +2066,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgeBase"
+                  "additionalProperties": true,
+                  "title": "Response Get Kb Api Kb  Kb Id  Get",
+                  "type": "object"
                 }
               }
             },
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Validation Error"
           }
         },
-        "summary": "Get Knowledge Base"
+        "summary": "Get Kb",
+        "tags": [
+          "Legacy compatibility"
+        ]
       }
     },
     "/api/kb/{kb_id}/query": {
       "post": {
-        "description": "Query a knowledge base (non-streaming).\n\nThis endpoint exists as a fallback for environments that don't support SSE\nstreaming (for example, embedded webviews).",
-        "operationId": "query_knowledge_base_api_kb__kb_id__query_post",
+        "operationId": "query_api_kb__kb_id__query_post",
         "parameters": [
           {
             "in": "path",
@@ -2294,13 +2103,29 @@
               "title": "Kb Id",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryRequest"
+                "$ref": "#/components/schemas/LegacyQuery"
               }
             }
           },
@@ -2311,207 +2136,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryResponse"
+                  "additionalProperties": true,
+                  "title": "Response Query Api Kb  Kb Id  Query Post",
+                  "type": "object"
                 }
               }
             },
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Validation Error"
           }
         },
-        "summary": "Query Knowledge Base"
+        "summary": "Query",
+        "tags": [
+          "Legacy compatibility"
+        ]
       }
     },
     "/api/kb/{kb_id}/query/stream": {
       "post": {
-        "description": "Query a knowledge base with streaming response.\n\nReturns Server-Sent Events (SSE) with:\n- step: Reasoning step updates\n- sources: Retrieved source documents\n- token: Streaming answer tokens\n- complete: Final complete event\n- error: Terminal ErrorEnvelope with the response's X-Correlation-ID\n\nAccepts optional model_config_override to use custom LLM settings.",
-        "operationId": "query_knowledge_base_stream_api_kb__kb_id__query_stream_post",
+        "operationId": "query_stream_api_kb__kb_id__query_stream_post",
         "parameters": [
           {
             "in": "path",
@@ -2521,13 +2173,29 @@
               "title": "Kb Id",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryRequest"
+                "$ref": "#/components/schemas/LegacyQuery"
               }
             }
           },
@@ -2536,412 +2204,2080 @@
         "responses": {
           "200": {
             "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Query Stream",
+        "tags": [
+          "Legacy compatibility"
+        ]
+      }
+    },
+    "/api/models/config": {
+      "get": {
+        "operationId": "model_config_api_models_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Model Config Api Models Config Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Model Config",
+        "tags": [
+          "Legacy compatibility"
+        ]
+      }
+    },
+    "/api/v2/admin/evals": {
+      "post": {
+        "operationId": "evaluate_api_v2_admin_evals_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Evaluate Api V2 Admin Evals Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Evaluate",
+        "tags": [
+          "Administration"
+        ]
+      }
+    },
+    "/api/v2/admin/tools": {
+      "get": {
+        "operationId": "tools_api_v2_admin_tools_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Tools Api V2 Admin Tools Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tools",
+        "tags": [
+          "Administration"
+        ]
+      }
+    },
+    "/api/v2/approvals/{approval_id}": {
+      "post": {
+        "operationId": "decision_api_v2_approvals__approval_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "approval_id",
+            "required": true,
+            "schema": {
+              "title": "Approval Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Decision Api V2 Approvals  Approval Id  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decision",
+        "tags": [
+          "Approvals"
+        ]
+      }
+    },
+    "/api/v2/documents/{doc_id}": {
+      "delete": {
+        "operationId": "delete_doc_api_v2_documents__doc_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Doc",
+        "tags": [
+          "Documents"
+        ]
+      },
+      "put": {
+        "operationId": "update_doc_api_v2_documents__doc_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_doc_api_v2_documents__doc_id__put"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Update Doc Api V2 Documents  Doc Id  Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Doc",
+        "tags": [
+          "Documents"
+        ]
+      }
+    },
+    "/api/v2/documents/{doc_id}/download": {
+      "get": {
+        "operationId": "download_doc_api_v2_documents__doc_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Doc",
+        "tags": [
+          "Documents"
+        ]
+      }
+    },
+    "/api/v2/documents/{doc_id}/preview": {
+      "get": {
+        "operationId": "preview_doc_api_v2_documents__doc_id__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20000,
+              "maximum": 50000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentPreviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Doc",
+        "tags": [
+          "Documents"
+        ]
+      }
+    },
+    "/api/v2/health/live": {
+      "get": {
+        "operationId": "live_api_v2_health_live_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Live Api V2 Health Live Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Live"
+      }
+    },
+    "/api/v2/health/ready": {
+      "get": {
+        "operationId": "ready_api_v2_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Ready Api V2 Health Ready Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ready"
+      }
+    },
+    "/api/v2/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_api_v2_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Job Api V2 Jobs  Job Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job",
+        "tags": [
+          "Jobs"
+        ]
+      }
+    },
+    "/api/v2/kb": {
+      "get": {
+        "operationId": "list_kbs_api_v2_kb_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeBaseResponse"
+                  },
+                  "title": "Response List Kbs Api V2 Kb Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Kbs",
+        "tags": [
+          "Knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_kb_api_v2_kb_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKb"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Kb",
+        "tags": [
+          "Knowledge"
+        ]
+      }
+    },
+    "/api/v2/kb/{kb_id}": {
+      "delete": {
+        "operationId": "delete_kb_api_v2_kb__kb_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Kb",
+        "tags": [
+          "Knowledge"
+        ]
+      },
+      "get": {
+        "operationId": "get_kb_api_v2_kb__kb_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Kb",
+        "tags": [
+          "Knowledge"
+        ]
+      }
+    },
+    "/api/v2/kb/{kb_id}/documents": {
+      "get": {
+        "operationId": "list_docs_api_v2_kb__kb_id__documents_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentResponse"
+                  },
+                  "title": "Response List Docs Api V2 Kb  Kb Id  Documents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Docs",
+        "tags": [
+          "Documents"
+        ]
+      },
+      "post": {
+        "operationId": "upload_api_v2_kb__kb_id__documents_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_api_v2_kb__kb_id__documents_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Upload Api V2 Kb  Kb Id  Documents Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload",
+        "tags": [
+          "Documents"
+        ]
+      }
+    },
+    "/api/v2/memory": {
+      "get": {
+        "operationId": "memories_api_v2_memory_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Memories Api V2 Memory Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Memories",
+        "tags": [
+          "Memory"
+        ]
+      }
+    },
+    "/api/v2/memory/consent": {
+      "put": {
+        "operationId": "consent_api_v2_memory_consent_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Consent Api V2 Memory Consent Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Consent",
+        "tags": [
+          "Memory"
+        ]
+      }
+    },
+    "/api/v2/memory/{memory_id}": {
+      "delete": {
+        "operationId": "delete_api_v2_memory__memory_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "memory_id",
+            "required": true,
+            "schema": {
+              "title": "Memory Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete",
+        "tags": [
+          "Memory"
+        ]
+      }
+    },
+    "/api/v2/models": {
+      "get": {
+        "operationId": "models_api_v2_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Models Api V2 Models Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Models",
+        "tags": [
+          "Capabilities"
+        ]
+      }
+    },
+    "/api/v2/runs": {
+      "post": {
+        "operationId": "start_run_api_v2_runs_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Run",
+        "tags": [
+          "Chat runs"
+        ]
+      }
+    },
+    "/api/v2/runs/{run_id}": {
+      "get": {
+        "operationId": "get_run_api_v2_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Run",
+        "tags": [
+          "Chat runs"
+        ]
+      }
+    },
+    "/api/v2/runs/{run_id}/activity": {
+      "get": {
+        "operationId": "activity_api_v2_runs__run_id__activity_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExecutionEnvelope"
+                  },
+                  "title": "Response Activity Api V2 Runs  Run Id  Activity Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Activity",
+        "tags": [
+          "Chat runs"
+        ]
+      }
+    },
+    "/api/v2/runs/{run_id}/cancel": {
+      "post": {
+        "operationId": "cancel_api_v2_runs__run_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Cancel Api V2 Runs  Run Id  Cancel Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel",
+        "tags": [
+          "Chat runs"
+        ]
+      }
+    },
+    "/api/v2/runs/{run_id}/events": {
+      "get": {
+        "operationId": "events_api_v2_runs__run_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
               "text/event-stream": {
                 "schema": {
                   "type": "string"
                 }
               }
             },
-            "description": "SSE connection opened. A terminal complete event indicates success; a terminal error event carries ErrorEnvelope. No complete event follows an error."
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Successful Response"
           },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Validation Error"
           }
         },
-        "summary": "Query Knowledge Base Stream",
-        "x-event-schema": {
-          "$ref": "#/components/schemas/ExecutionEvent"
-        }
+        "summary": "Events",
+        "tags": [
+          "Chat runs"
+        ]
       }
     },
-    "/api/models/config": {
-      "get": {
-        "description": "Get current model configuration (without exposing API key).",
-        "operationId": "get_model_config_api_models_config_get",
+    "/api/v2/runs/{run_id}/feedback": {
+      "post": {
+        "operationId": "feedback_api_v2_runs__run_id__feedback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackBody"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ModelConfigResponse"
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Feedback Api V2 Runs  Run Id  Feedback Post",
+                  "type": "object"
                 }
               }
             },
             "description": "Successful Response"
           },
-          "400": {
+          "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "BAD_REQUEST: The request could not be read. Check its format. Retryable: False.\n\nHTTP_ERROR: The request could not be completed. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Feedback",
+        "tags": [
+          "Feedback"
+        ]
+      }
+    },
+    "/api/v2/sessions": {
+      "get": {
+        "operationId": "list_sessions_api_v2_sessions_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
                   "type": "string"
+                },
+                {
+                  "type": "null"
                 }
-              }
+              ],
+              "title": "Authorization"
             }
-          },
-          "404": {
+          }
+        ],
+        "responses": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "items": {
+                    "$ref": "#/components/schemas/SessionResponse"
+                  },
+                  "title": "Response List Sessions Api V2 Sessions Get",
+                  "type": "array"
                 }
               }
             },
-            "description": "NOT_FOUND: The requested resource was not found. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "METHOD_NOT_ALLOWED: This method is not supported for this endpoint. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "CONFLICT: This request conflicts with the current resource state. Refresh before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PAYLOAD_TOO_LARGE: The request is too large. Reduce its size and try again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Successful Response"
           },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "VALIDATION_ERROR: Some request fields are invalid. Check the field details. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Sessions",
+        "tags": [
+          "Sessions"
+        ]
+      },
+      "post": {
+        "operationId": "create_api_v2_sessions_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
                   "type": "string"
+                },
+                {
+                  "type": "null"
                 }
-              }
+              ],
+              "title": "Authorization"
             }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "RATE_LIMITED: Too many requests. Try again later. Retryable: True.\n\nQUOTA_EXCEEDED: The provider quota is exhausted. Check billing or quota before trying again. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "INTERNAL_ERROR: The request could not be completed because of an internal error. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_AUTH_ERROR: The model provider rejected the credentials or access. Check the model settings. Retryable: False.\n\nPROVIDER_REQUEST_ERROR: The model provider rejected this request. Check the model settings. Retryable: False.\n\nPROVIDER_ERROR: The model provider could not complete the request. Retryable: False.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "MODEL_NOT_CONFIGURED: Configure a model API key before trying again. Retryable: False.\n\nSERVICE_UNAVAILABLE: The service is temporarily unavailable. Try again later. Retryable: True.\n\nPROVIDER_UNAVAILABLE: The model provider is temporarily unavailable. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "504": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "PROVIDER_TIMEOUT: The model provider did not respond in time. Try again later. Retryable: True.",
-            "headers": {
-              "X-Correlation-ID": {
-                "schema": {
-                  "type": "string"
-                }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SessionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
               }
             }
           }
         },
-        "summary": "Get Model Config"
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create",
+        "tags": [
+          "Sessions"
+        ]
+      }
+    },
+    "/api/v2/sessions/{session_id}": {
+      "delete": {
+        "operationId": "delete_session_api_v2_sessions__session_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Session",
+        "tags": [
+          "Sessions"
+        ]
+      },
+      "get": {
+        "operationId": "get_session_api_v2_sessions__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Session",
+        "tags": [
+          "Sessions"
+        ]
+      },
+      "patch": {
+        "operationId": "update_api_v2_sessions__session_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update",
+        "tags": [
+          "Sessions"
+        ]
+      }
+    },
+    "/api/v2/sessions/{session_id}/messages/{message_id}/regenerate": {
+      "post": {
+        "operationId": "regenerate_api_v2_sessions__session_id__messages__message_id__regenerate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "title": "Message Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Regenerate",
+        "tags": [
+          "Sessions"
+        ]
+      }
+    },
+    "/api/v2/sessions/{session_id}/messages/{message_id}/version": {
+      "patch": {
+        "operationId": "select_version_api_v2_sessions__session_id__messages__message_id__version_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "title": "Message Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMessage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Select Version",
+        "tags": [
+          "Sessions"
+        ]
+      }
+    },
+    "/api/v2/settings/public": {
+      "get": {
+        "operationId": "settings_api_v2_settings_public_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Settings Api V2 Settings Public Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Settings",
+        "tags": [
+          "Capabilities"
+        ]
+      }
+    },
+    "/api/v2/sources/{evidence_id}": {
+      "get": {
+        "operationId": "source_api_v2_sources__evidence_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "evidence_id",
+            "required": true,
+            "schema": {
+              "title": "Evidence Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Source Api V2 Sources  Evidence Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Source",
+        "tags": [
+          "Sources"
+        ]
       }
     }
   }
