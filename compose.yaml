@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: rag
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./infra/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  api-demo:
+    build: .
+    profiles: [demo]
+    command: ["agentic-rag", "serve", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      AGENTIC_RAG_ENVIRONMENT: demo
+      AGENTIC_RAG_STORE: fake
+      AGENTIC_RAG_PROVIDER: fake
+    ports:
+      - "127.0.0.1:8001:8001"
+volumes:
+  pg_data:

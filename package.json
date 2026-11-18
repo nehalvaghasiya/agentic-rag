@@ -1,0 +1,9 @@
+{
+  "name": "agentic-rag-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "node frontend/scripts/dev.mjs",
+    "dev:web": "npm --prefix frontend run dev:web"
+  },
+  "engines": { "node": "24.x", "npm": "11.x" }
+}
