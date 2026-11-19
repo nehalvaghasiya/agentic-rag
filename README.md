@@ -4,7 +4,7 @@ Chat with your documents, inspect the sources behind an answer, and return to sa
 
 ## Live demo
 
-https://github.com/user-attachments/assets/2f8022d2-7587-439c-9230-4f553c64a35a
+https://github.com/user-attachments/assets/7f33c246-c636-48b0-90ef-c6e87eea93c5
 
 Follow two real NVIDIA earnings PDFs from upload and indexing to cited chat, deep comparison, source inspection, answer versions, Stop, saved history, and knowledge-base management. The video has visible chapter captions and no audio. Waiting periods are shortened for viewing.
 
